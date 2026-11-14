@@ -1,3 +1,6 @@
+
+---
+
 # QR-overføring 6 (data først, deretter paritet, med nedtelling)
 
 Som versjon 5 (`../qrsend5`), med nedtelling før start.
