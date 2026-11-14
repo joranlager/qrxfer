@@ -7,27 +7,6 @@ const $ = (id) => document.getElementById(id);
 const fmtBytes = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} kB` : `${(n / 1048576).toFixed(2)} MB`);
 const fmtTime = (s) => (s < 60 ? `${s.toFixed(1)} s` : `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`);
 
-// ---------------------------------------------------------------- QR til appen
-// Startsiden viser en QR-kode til appens adresse, så en annen telefon kan åpne den med kameraet.
-const APP_URL = 'https://joranlager.github.io/qrxfer/';
-(function drawAppQr() {
-  const c = $('app-qr');
-  if (!c) return;
-  const qr = qrcode(0, 'M');
-  qr.addData(APP_URL, 'Byte');
-  qr.make();
-  const n = qr.getModuleCount(), quiet = 2;
-  const ctx = c.getContext('2d');
-  const cell = Math.floor(c.width / (n + 2 * quiet));
-  const off = Math.floor((c.width - cell * n) / 2);
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, c.width, c.height);
-  ctx.fillStyle = '#000';
-  for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) {
-    if (qr.isDark(r, col)) ctx.fillRect(off + col * cell, off + r * cell, cell, cell);
-  }
-})();
-
 // ---------------------------------------------------------------- tabs
 function showTab(name) {
   $('tab-send').setAttribute('aria-selected', name === 'send');

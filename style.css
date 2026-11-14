@@ -103,9 +103,12 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 
 /* Startsiden: QR-kode til appens adresse */
 .open-here { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.open-here-qr { flex: none; background: #fff; padding: 8px; border-radius: 10px; }
-#app-qr { display: block; width: 180px; height: 180px; }
+.open-here-qr { flex: none; background: #fff; border-radius: 10px; line-height: 0; }
+#app-qr { display: block; width: 200px; height: 200px; max-width: 100%; }
 .open-here-text { flex: 1; min-width: 180px; }
 .open-here-text h2 { margin-bottom: 4px; }
 .open-here-text p { margin: 0 0 8px; }
-.open-here-text a { font-size: 13px; word-break: break-all; color: var(--accent); }
+@media (max-width: 520px) {
+  .open-here { justify-content: center; text-align: center; }
+  .open-here-text { min-width: 0; flex-basis: 100%; }
+}
