@@ -24,6 +24,17 @@
 
   <!-- ===================== SEND ===================== -->
   <main id="view-send" class="view">
+    <section class="card open-here">
+      <div class="open-here-qr">
+        <canvas id="app-qr" width="180" height="180" aria-label="QR-kode til https://joranlager.github.io/qrxfer/"></canvas>
+      </div>
+      <div class="open-here-text">
+        <h2>Åpne på en annen telefon</h2>
+        <p class="muted">Skann koden med kameraet på telefonen for å åpne appen.</p>
+        <a id="app-link" class="mono" href="https://joranlager.github.io/qrxfer/">https://joranlager.github.io/qrxfer/</a>
+      </div>
+    </section>
+
     <section class="card">
       <label class="file-pick">
         <input type="file" id="file" accept="image/*">

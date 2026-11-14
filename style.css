@@ -100,3 +100,12 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 .sw.ok { background: var(--ok); } .sw.par { background: var(--parity); } .sw.par.pale { opacity: .45; }
 .sw.miss { background: var(--missing); border: 1px solid var(--border); }
 #recv-status { margin-top: 4px; }
+
+/* Startsiden: QR-kode til appens adresse */
+.open-here { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.open-here-qr { flex: none; background: #fff; padding: 8px; border-radius: 10px; }
+#app-qr { display: block; width: 180px; height: 180px; }
+.open-here-text { flex: 1; min-width: 180px; }
+.open-here-text h2 { margin-bottom: 4px; }
+.open-here-text p { margin: 0 0 8px; }
+.open-here-text a { font-size: 13px; word-break: break-all; color: var(--accent); }
