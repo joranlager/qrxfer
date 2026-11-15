@@ -76,7 +76,7 @@ function setSourceFile(file) {
 }
 $('file').addEventListener('change', (e) => setSourceFile(e.target.files[0]));
 
-// Drag and drop: drop an image anywhere on the file card, same as choosing it with the picker.
+// Drag and drop: drop a file anywhere on the file card, same as choosing it with the picker.
 const dropZone = $('file').closest('.card');
 const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
 let dragDepth = 0;
@@ -101,11 +101,8 @@ dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dragDepth = 0;
   dropZone.classList.remove('drag-over');
-  const img = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
-  if (img) { setSourceFile(img); return; }
-  const label = $('file-label'), previous = label.textContent;
-  label.textContent = 'That is not an image. Drop an image file.';
-  setTimeout(() => { label.textContent = previous; }, 2500);
+  const file = e.dataTransfer.files[0];   // any file type; if several are dropped, the first one is used
+  if (file) setSourceFile(file);
 });
 // A file dropped outside the card must not make the browser open it and leave the app.
 for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
@@ -133,18 +130,29 @@ function canvasToBlob(canvas, type, q) {
   return new Promise((res) => canvas.toBlob(res, type, q));
 }
 
+// Any file type can be sent. The image options (format, size, quality) only apply to images.
+const isImageFile = (f) => (f.type || '').startsWith('image/');
+function showImageOptions(on) {
+  for (const el of document.querySelectorAll('[data-image-only]')) el.hidden = !on;
+}
+
 async function prepare() {
   const token = ++prepareToken;
   $('btn-start').disabled = true;
   if (!sourceFile) return;
-  $('estimate').textContent = 'Preparing image …';
+  $('estimate').textContent = 'Preparing file …';
+  let asImage = isImageFile(sourceFile);
+  showImageOptions(asImage);
   const format = opt.format.value;
-  let bytes, type, name = sourceFile.name;
-  if (format === 'original') {
+  let bytes, type, name = sourceFile.name, img = null;
+  if (asImage && format !== 'original') {
+    // Formats the browser cannot decode (e.g. HEIC) are sent as they are.
+    try { img = await decodeImage(sourceFile); } catch { asImage = false; showImageOptions(false); }
+  }
+  if (!asImage || format === 'original') {
     bytes = new Uint8Array(await sourceFile.arrayBuffer());
     type = sourceFile.type || 'application/octet-stream';
   } else {
-    const img = await decodeImage(sourceFile);
     const w0 = img.width, h0 = img.height;
     const maxSide = Math.max(16, +opt.maxSide.value || 1600);
     const scale = Math.min(1, maxSide / Math.max(w0, h0));
@@ -166,10 +174,19 @@ async function prepare() {
   const blobUrl = URL.createObjectURL(new Blob([bytes], { type }));
   const prev = $('preview');
   if (prev.dataset.url) URL.revokeObjectURL(prev.dataset.url);
-  prev.src = blobUrl; prev.dataset.url = blobUrl;
-  prev.onload = () => {
-    $('file-info').textContent = `${name} · ${prev.naturalWidth}×${prev.naturalHeight} · ${fmtBytes(bytes.length)} (original ${fmtBytes(sourceFile.size)})`;
-  };
+  const sizeInfo = `${fmtBytes(bytes.length)}` + (bytes.length !== sourceFile.size ? ` (original ${fmtBytes(sourceFile.size)})` : '');
+  const plainInfo = [name, asImage ? '' : (type || 'unknown type'), sizeInfo].filter(Boolean).join(' · ');
+  $('file-info').textContent = plainInfo;
+  prev.hidden = !asImage;
+  if (asImage) {
+    prev.onload = () => {
+      $('file-info').textContent = `${name} · ${prev.naturalWidth}×${prev.naturalHeight} · ${sizeInfo}`;
+    };
+    prev.onerror = () => { prev.hidden = true; };   // an image type the browser cannot display
+    prev.src = blobUrl; prev.dataset.url = blobUrl;
+  } else {
+    prev.removeAttribute('src'); prev.dataset.url = blobUrl;
+  }
   $('preview-wrap').hidden = false;
   updateEstimate();
 }
@@ -179,7 +196,8 @@ function updateEstimate() {
   const chunk = Math.max(50, +opt.chunk.value || 380);
   const per = Math.max(1, +opt.perPacket.value || 10);
   const interval = Math.max(30, +opt.interval.value || 300);
-  const K = Math.ceil((2 + 120 + payloadBytes.length) / chunk);
+  const metaLen = new TextEncoder().encode(JSON.stringify({ name: payloadName, type: payloadType, size: payloadBytes.length, crc: 4294967295 })).length;
+  const K = Math.ceil((2 + metaLen + payloadBytes.length) / chunk);
   const t = (share) => fmtTime((K / share / per) * (interval / 1000));
   $('estimate').textContent =
     `${K} data codes first, then parity codes only (${per} per packet, ${fmtBytes(Math.round((per * chunk) / (interval / 1000)))}/s). ` +
@@ -292,7 +310,7 @@ function startPlayer() {
   ecc = opt.ecc.value;
   const tid = (crypto.getRandomValues(new Uint32Array(1))[0]) >>> 0;
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
-  if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or compress the image more.'); return; }
+  if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
   $('btn-pause').textContent = 'Pause';
   $('player').hidden = false;
@@ -411,7 +429,7 @@ function updatePhase() {
   let text, cls = '';
   if (recvError) { text = '⚠ ' + recvError; cls = 'warn'; }
   else if (!cameraOn && !done) { text = 'Camera is off. Press "Start camera".'; }
-  else if (done) { text = resultOk ? '✔ Done. The image was received and verified.' : '⚠ Done, but the checksum does not match.'; cls = resultOk ? 'ok' : 'warn'; }
+  else if (done) { text = resultOk ? '✔ Done. The file was received and verified.' : '⚠ Done, but the checksum does not match.'; cls = resultOk ? 'ok' : 'warn'; }
   else if (!dec.K) { text = 'Waiting for the sender. Aim the camera at the screen showing the QR codes.'; }
   else {
     const K = dec.K, missing = K - direct.size, cov = parityCovered(), left = K - dec.decoded;
@@ -447,7 +465,7 @@ function updateProgressText() {
   $('recv-pct').textContent = `${pct < 100 && pct > 99 ? 99 : Math.floor(pct)} %`;
   const ms = tStart ? (tEnd || performance.now()) - tStart : 0;
   $('recv-time').textContent = fmtClock(ms);
-  // Speed: received image data (bytes) per second, in MB/s
+  // Speed: received file data (bytes) per second, in MB/s
   const bytes = dec.K ? Math.min(dec.streamLen, dec.decoded * dec.B) : 0;
   $('recv-speed').textContent = fmtMBs(ms > 0 ? bytes / (ms / 1000) : 0);
   $('recv-time-label').textContent = tEnd ? 'transfer time (done)' : 'transfer time';
@@ -581,11 +599,20 @@ function finish() {
   const { meta, file, ok } = dec.assemble();
   resultOk = ok;
   drawChunkMap();
-  resultName = meta.name || 'image';
+  resultName = meta.name || 'file';
   resultBlob = new Blob([file], { type: meta.type || 'application/octet-stream' });
   if (lastResultUrl) URL.revokeObjectURL(lastResultUrl);
   lastResultUrl = URL.createObjectURL(resultBlob);
-  $('result-img').src = lastResultUrl;
+  // Only images get a preview; any other file type just offers the download.
+  const resultImg = $('result-img');
+  if ((meta.type || '').startsWith('image/')) {
+    resultImg.hidden = false;
+    resultImg.onerror = () => { resultImg.hidden = true; };
+    resultImg.src = lastResultUrl;
+  } else {
+    resultImg.hidden = true;
+    resultImg.removeAttribute('src');
+  }
   $('btn-download').href = lastResultUrl;
   $('btn-download').download = resultName;
   $('result-info').textContent =

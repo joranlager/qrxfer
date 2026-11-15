@@ -65,8 +65,8 @@
 
     <section class="card">
       <label class="file-pick">
-        <input type="file" id="file" accept="image/*">
-        <span id="file-label">Choose an image, or drop one here</span>
+        <input type="file" id="file">
+        <span id="file-label">Choose a file, or drop one here</span>
       </label>
       <div id="preview-wrap" hidden>
         <img id="preview" alt="Preview">
@@ -77,17 +77,17 @@
     <section class="card">
       <h2>Settings</h2>
       <div class="grid">
-        <label>Image format
+        <label data-image-only>Image format
           <select id="opt-format">
             <option value="image/jpeg">JPEG (compressed)</option>
             <option value="image/webp">WebP (compressed)</option>
             <option value="original">Original file (no changes)</option>
           </select>
         </label>
-        <label>Max width/height (px)
+        <label data-image-only>Max width/height (px)
           <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64">
         </label>
-        <label>Quality <output id="out-quality">0.75</output>
+        <label data-image-only>Quality <output id="out-quality">0.75</output>
           <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
         </label>
         <label>QR codes per packet
@@ -162,10 +162,10 @@
 
     <section class="card" id="result" hidden>
       <h2>Received</h2>
-      <img id="result-img" alt="Received image">
+      <img id="result-img" alt="Received image" hidden>
       <p id="result-info" class="muted"></p>
       <div class="row">
-        <button id="btn-share" class="primary">Share / Save to Photos</button>
+        <button id="btn-share" class="primary">Share / Save</button>
         <a id="btn-download" class="button" download>Download</a>
       </div>
     </section>
