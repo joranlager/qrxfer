@@ -69,11 +69,46 @@ function saveSettings() {
   } catch {}
 }
 
-$('file').addEventListener('change', (e) => {
-  sourceFile = e.target.files[0] || null;
+function setSourceFile(file) {
+  sourceFile = file || null;
   if (sourceFile) $('file-label').textContent = sourceFile.name;
   prepare();
+}
+$('file').addEventListener('change', (e) => setSourceFile(e.target.files[0]));
+
+// Drag and drop: drop an image anywhere on the file card, same as choosing it with the picker.
+const dropZone = $('file').closest('.card');
+const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+let dragDepth = 0;
+dropZone.addEventListener('dragenter', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth++;
+  dropZone.classList.add('drag-over');
 });
+dropZone.addEventListener('dragover', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+dropZone.addEventListener('dragleave', (e) => {
+  if (!hasFiles(e)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) dropZone.classList.remove('drag-over');
+});
+dropZone.addEventListener('drop', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0;
+  dropZone.classList.remove('drag-over');
+  const img = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
+  if (img) { setSourceFile(img); return; }
+  const label = $('file-label'), previous = label.textContent;
+  label.textContent = 'That is not an image. Drop an image file.';
+  setTimeout(() => { label.textContent = previous; }, 2500);
+});
+// A file dropped outside the card must not make the browser open it and leave the app.
+for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
 for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); prepare(); });
 for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('input', () => { saveSettings(); updateEstimate(); });
 opt.quality.addEventListener('input', () => ($('out-quality').textContent = opt.quality.value));

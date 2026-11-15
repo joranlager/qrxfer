@@ -106,6 +106,8 @@ button:disabled { opacity: .5; cursor: default; }
   display: block; text-align: center; padding: 28px 12px; border: 2px dashed var(--border);
   border-radius: 12px; cursor: pointer; font-weight: 600;
 }
+/* Highlight while an image is dragged over the file card */
+.card.drag-over .file-pick span { border-color: var(--accent); background: rgba(37, 99, 235, .12); }
 #preview { display: block; max-width: 100%; max-height: 320px; margin: 12px auto 0; border-radius: 8px; }
 #file-info { text-align: center; }
 
@@ -188,7 +190,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
     <section class="card">
       <label class="file-pick">
         <input type="file" id="file" accept="image/*">
-        <span id="file-label">Choose an image …</span>
+        <span id="file-label">Choose an image, or drop one here</span>
       </label>
       <div id="preview-wrap" hidden>
         <img id="preview" alt="Preview">
@@ -2936,11 +2938,46 @@ function saveSettings() {
   } catch {}
 }
 
-$('file').addEventListener('change', (e) => {
-  sourceFile = e.target.files[0] || null;
+function setSourceFile(file) {
+  sourceFile = file || null;
   if (sourceFile) $('file-label').textContent = sourceFile.name;
   prepare();
+}
+$('file').addEventListener('change', (e) => setSourceFile(e.target.files[0]));
+
+// Drag and drop: drop an image anywhere on the file card, same as choosing it with the picker.
+const dropZone = $('file').closest('.card');
+const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+let dragDepth = 0;
+dropZone.addEventListener('dragenter', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth++;
+  dropZone.classList.add('drag-over');
 });
+dropZone.addEventListener('dragover', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+dropZone.addEventListener('dragleave', (e) => {
+  if (!hasFiles(e)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) dropZone.classList.remove('drag-over');
+});
+dropZone.addEventListener('drop', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0;
+  dropZone.classList.remove('drag-over');
+  const img = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
+  if (img) { setSourceFile(img); return; }
+  const label = $('file-label'), previous = label.textContent;
+  label.textContent = 'That is not an image. Drop an image file.';
+  setTimeout(() => { label.textContent = previous; }, 2500);
+});
+// A file dropped outside the card must not make the browser open it and leave the app.
+for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
 for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); prepare(); });
 for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('input', () => { saveSettings(); updateEstimate(); });
 opt.quality.addEventListener('input', () => ($('out-quality').textContent = opt.quality.value));

@@ -90,6 +90,8 @@ button:disabled { opacity: .5; cursor: default; }
   display: block; text-align: center; padding: 28px 12px; border: 2px dashed var(--border);
   border-radius: 12px; cursor: pointer; font-weight: 600;
 }
+/* Highlight while an image is dragged over the file card */
+.card.drag-over .file-pick span { border-color: var(--accent); background: rgba(37, 99, 235, .12); }
 #preview { display: block; max-width: 100%; max-height: 320px; margin: 12px auto 0; border-radius: 8px; }
 #file-info { text-align: center; }
 
