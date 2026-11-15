@@ -24,6 +24,8 @@
       <button role="tab" id="tab-send" aria-selected="true">Send</button>
       <button role="tab" id="tab-recv" aria-selected="false">Receive</button>
     </nav>
+    <!-- Packages received: lives in the top band so it is always visible while receiving -->
+    <canvas id="chunk-map" height="16" role="img" aria-label="Packages received" hidden></canvas>
   </header>
 
   <!-- ===================== SEND ===================== -->
@@ -131,7 +133,6 @@
       </div>
       <div class="progress"><div id="progress-bar"></div></div>
       <p id="recv-phase" class="recv-phase">Camera is off. Press "Start camera".</p>
-      <canvas id="chunk-map" height="40"></canvas>
       <p class="legend"><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
       <p id="recv-status" class="mono muted">No codes yet</p>
     </section>

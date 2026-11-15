@@ -13,6 +13,9 @@ function showTab(name) {
   $('tab-recv').setAttribute('aria-selected', name === 'recv');
   $('view-send').hidden = name !== 'send';
   $('view-recv').hidden = name !== 'recv';
+  // The packages-received map is in the top band and only shown while receiving.
+  $('chunk-map').hidden = name !== 'recv';
+  if (name === 'recv') drawChunkMap();
   if (name !== 'recv') stopCamera();
   try { localStorage.setItem('qrsend6-tab', name); } catch {}
 }
@@ -419,7 +422,7 @@ setInterval(() => { updateProgressText(); updatePhase(); }, 100);
 function drawChunkMap() {
   const cm = $('chunk-map');
   const dpr = window.devicePixelRatio || 1;
-  cm.width = Math.round(cm.clientWidth * dpr); cm.height = Math.round(40 * dpr);
+  cm.width = Math.round(cm.clientWidth * dpr); cm.height = Math.round((cm.clientHeight || 16) * dpr);
   const ctx = cm.getContext('2d');
   const css = getComputedStyle(document.documentElement);
   ctx.fillStyle = css.getPropertyValue('--missing'); ctx.fillRect(0, 0, cm.width, cm.height);
