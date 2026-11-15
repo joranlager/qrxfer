@@ -290,7 +290,19 @@ $('btn-pause').onclick = () => {
 };
 $('btn-slower').onclick = () => { interval = Math.min(5000, Math.round(interval * 1.25)); drawPacket(); };
 $('btn-faster').onclick = () => { interval = Math.max(30, Math.round(interval / 1.25)); drawPacket(); };
-window.addEventListener('resize', () => playing && resizePlayer());
+// The top band stays visible while sending. The player starts right below it (CSS var --band-h),
+// so QR codes never end up under the band or the phone's notch. Re-measure whenever the band's
+// height changes, e.g. when the phone is rotated, and redraw so every QR code stays a square.
+const band = document.querySelector('header.top');
+function syncBand() {
+  document.documentElement.style.setProperty('--band-h', `${band.offsetHeight}px`);
+  if (playing) requestAnimationFrame(resizePlayer);
+}
+new ResizeObserver(syncBand).observe(band);
+window.addEventListener('resize', syncBand);
+window.addEventListener('orientationchange', () => setTimeout(syncBand, 150));
+window.visualViewport?.addEventListener('resize', syncBand);
+syncBand();
 document.addEventListener('keydown', (e) => { if (playing && e.key === 'Escape') stopPlayer(); });
 
 // =====================================================================
