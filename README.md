@@ -21,3 +21,17 @@ node build.mjs
 ```
 
 The build inlines the stylesheet, the JavaScript (the app, the protocol and the QR generator), the decoder worker with its zxing-cpp library and WebAssembly binary, the logo and the favicon into one self-contained `index.html`. The manifest and the install icons stay separate files because installing the app needs real files. The GitHub Pages workflow runs the build before deploying, so the live page is always built from `index_dev.html`.
+
+## Third-party notices
+
+QRXFER bundles the following third-party components. Each keeps its own license.
+
+| Component | Files | License | Copyright |
+|---|---|---|---|
+| QR code generator (`qrcode.mjs`) | `vendor/qrcode.mjs` | MIT | Copyright (c) 2009 Kazuhiko Arase |
+| zxing-wasm JavaScript wrapper (`zxing-reader.js`), version 3.1.6 | `vendor/zxing-reader.js` | MIT | Copyright (c) 2023 Ze-Zheng Wu |
+| zxing-cpp WebAssembly reader (`zxing_reader.wasm`), built from zxing-cpp commit `2c3dcfe` | `vendor/zxing_reader.wasm` | Apache-2.0 | zxing-cpp contributors |
+
+The MIT license text for the zxing-wasm wrapper is in [`vendor/LICENSE-zxing-wasm.txt`](vendor/LICENSE-zxing-wasm.txt). The Apache License 2.0 text for zxing-cpp is in [`vendor/LICENSE-zxing-cpp.txt`](vendor/LICENSE-zxing-cpp.txt). The MIT license for `qrcode.mjs` is at http://www.opensource.org/licenses/mit-license.php, as stated in the file header.
+
+Sources: the wrapper is [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) and the reader is [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp).
