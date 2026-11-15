@@ -25,25 +25,34 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }
+html { scroll-padding-top: calc(var(--band-h, 72px) + 8px); }
 body {
   background: var(--bg);
   color: var(--text);
   font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Room for the fixed top band; --band-h is measured from the band by app.js. */
+  padding: var(--band-h, 72px) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
-/* The top band: always visible, above everything else, and clear of the phone's notch/status bar. */
+/* The top band: always visible, above everything else, and clear of the phone's notch/status bar.
+   position: fixed (not sticky) because it behaves the same in Safari and Chrome. */
 .top {
-  position: sticky; top: 0; z-index: 30;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 30;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: calc(env(safe-area-inset-top) + 10px) max(16px, calc((100% - 760px) / 2 + 16px)) 10px;
+  padding-top: calc(env(safe-area-inset-top) + 10px); padding-bottom: 10px;
+  padding-left: max(calc(16px + env(safe-area-inset-left)), calc((100% - 760px) / 2 + 16px));
+  padding-right: max(calc(16px + env(safe-area-inset-right)), calc((100% - 760px) / 2 + 16px));
   background: var(--bg); border-bottom: 1px solid var(--border);
+  -webkit-transform: translateZ(0); transform: translateZ(0);
 }
 h1 { font-size: 20px; margin: 0; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .logo { height: 44px; width: auto; max-width: none; display: block; flex: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .3)); }
 .brand h1 { line-height: 1.15; }
 @media (max-width: 480px) {
-  .top { padding: calc(env(safe-area-inset-top) + 8px) 12px 8px; }
+  .top {
+    padding-top: calc(env(safe-area-inset-top) + 8px); padding-bottom: 8px;
+    padding-left: calc(12px + env(safe-area-inset-left)); padding-right: calc(12px + env(safe-area-inset-right));
+  }
   .logo { height: 38px; }
   h1 { font-size: 16px; }
 }
