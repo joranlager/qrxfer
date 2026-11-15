@@ -37,7 +37,7 @@ body {
 }
 h1 { font-size: 20px; margin: 0; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.logo { height: 44px; width: auto; max-width: none; display: block; flex: none; border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.logo { height: 44px; width: auto; max-width: none; display: block; flex: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .3)); }
 .brand h1 { line-height: 1.15; }
 @media (max-width: 480px) {
   .top { padding: 12px; }
