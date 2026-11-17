@@ -152,3 +152,11 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .dlg-head h2 { margin: 0; }
 #settings h3 { font-size: 14px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Splash shown while the page refreshes (four taps on the logo) */
+.logo { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: var(--bg); animation: splash-in .2s ease-out; }
+#splash img { width: min(60vw, 320px); height: auto; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .3)); animation: splash-pulse 1s ease-in-out infinite; }
+#splash p { margin: 0; font-size: 18px; font-weight: 600; color: var(--muted); }
+@keyframes splash-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-pulse { 50% { transform: scale(1.06); opacity: .85; } }
