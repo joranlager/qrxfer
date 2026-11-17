@@ -331,34 +331,7 @@ function drawCountdown() {
   pctx.fillStyle = '#15181d';
   pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
   pctx.font = `700 ${Math.round(Math.min(W, H) * 0.45)}px -apple-system, "Segoe UI", sans-serif`;
-  if (paused) {
-    // Paused: a pause symbol sits in the centre. Tapping it resumes the countdown.
-    const r = Math.min(W, H) * 0.16;
-    pctx.fillStyle = '#15181d';
-    pctx.beginPath(); pctx.arc(W / 2, H / 2, r, 0, Math.PI * 2); pctx.fill();
-    pctx.fillStyle = '#fff';
-    const bw = r * 0.26, bh = r * 0.9, gap = r * 0.22;
-    for (const x of [W / 2 - gap / 2 - bw, W / 2 + gap / 2]) {
-      pctx.beginPath(); pctx.roundRect(x, H / 2 - bh / 2, bw, bh, bw * 0.35); pctx.fill();
-    }
-    pctx.fillStyle = '#5d6673';
-    pctx.font = `${Math.round(Math.min(18 * dpr, W * 0.05))}px -apple-system, "Segoe UI", sans-serif`;
-    pctx.fillText('Paused – tap to resume', W / 2, H / 2 + r + 32 * dpr);
-    return;
-  }
   pctx.fillText(String(Math.ceil(left / 1000)), W / 2, H / 2);
-  // The hint is wrapped to the screen width, so it never runs off the edge on a narrow screen.
-  const fs = Math.round(Math.min(18 * dpr, W * 0.05));
-  pctx.font = `${fs}px -apple-system, "Segoe UI", sans-serif`;
-  pctx.fillStyle = '#5d6673';
-  const lines = []; let line = '';
-  for (const word of 'Sending starts – aim the receiving camera at this screen'.split(' ')) {
-    const test = line ? line + ' ' + word : word;
-    if (line && pctx.measureText(test).width > W * 0.88) { lines.push(line); line = word; } else line = test;
-  }
-  lines.push(line);
-  const y0 = Math.min(H / 2 + Math.min(W, H) * 0.32, H - lines.length * fs * 1.3);
-  lines.forEach((l, i) => pctx.fillText(l, W / 2, y0 + i * fs * 1.3));
 }
 function countdownTick() {
   if (!playing || paused) return;
@@ -406,6 +379,7 @@ function startPlayer() {
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
   if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
+  $('pause-overlay').hidden = true;
   showInterval();
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
@@ -419,6 +393,7 @@ function startPlayer() {
 
 function stopPlayer() {
   playing = false;
+  $('pause-overlay').hidden = true;
   clearTimeout(timer);
   $('player').hidden = true;
   keepAwake(false);
@@ -431,8 +406,9 @@ const stopDlg = $('confirm-stop');
 $('btn-stop').onclick = () => stopDlg.showModal();
 stopDlg.addEventListener('close', () => { if (stopDlg.returnValue === 'stop') stopPlayer(); stopDlg.returnValue = ''; });
 
-// Pause only exists during the countdown: tap the countdown screen to pause it, tap the pause symbol to resume.
-pc.addEventListener('click', () => {
+// Pause only exists during the countdown: tap the screen to pause (the screen blurs and a pause symbol
+// appears), tap again to resume.
+function togglePause() {
   if (!playing || !countdownEnd) return;
   clearTimeout(timer);
   if (!paused) {
@@ -444,7 +420,13 @@ pc.addEventListener('click', () => {
     countdownEnd = performance.now() + countdownLeft;
     countdownTick();
   }
-});
+  // Centre the symbol on the countdown, which is drawn above the control bar.
+  $('pause-overlay').style.paddingBottom = `${$('player-bar').offsetHeight}px`;
+  $('pause-overlay').hidden = !paused;
+}
+pc.addEventListener('click', togglePause);
+$('pause-overlay').addEventListener('click', togglePause);
+
 // Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
 function showInterval() { $('wait-val').textContent = `${interval} ms`; }
 function stepInterval(f) {

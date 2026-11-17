@@ -177,6 +177,9 @@
   <!-- Fullscreen player -->
   <div id="player" hidden>
     <canvas id="player-canvas"></canvas>
+    <div id="pause-overlay" hidden aria-label="Paused" role="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="3.5" width="4.5" height="17" rx="1.6"/><rect x="14" y="3.5" width="4.5" height="17" rx="1.6"/></svg>
+    </div>
     <div id="player-bar">
       <div class="stepper" role="group" aria-label="Wait between packets">
         <button id="btn-faster" class="round" aria-label="Shorter wait" title="Shorter wait">
