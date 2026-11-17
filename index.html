@@ -176,6 +176,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 }
 #settings::backdrop { background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #settings[open] { display: flex; flex-direction: column; }
+#settings:focus { outline: none; }
 #settings form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 #settings h2 { margin: 0 0 12px; text-align: center; font-size: 17px; font-weight: 600; }
 .dlg-body { overflow-y: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
@@ -227,7 +228,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   </header>
 
   <!-- ===================== SETTINGS ===================== -->
-  <dialog id="settings" aria-labelledby="settings-title">
+  <dialog id="settings" aria-labelledby="settings-title" autofocus>
     <form method="dialog">
       <h2 id="settings-title">Settings</h2>
       <div class="dlg-body">
@@ -2969,7 +2970,11 @@ $('tab-recv').onclick = () => showTab('recv');
 
 // ---------------------------------------------------------------- settings dialog
 const settingsDlg = $('settings');
-$('btn-settings').onclick = () => settingsDlg.showModal();
+$('btn-settings').onclick = () => {
+  settingsDlg.showModal();
+  // Opening must not focus (and so highlight or open) the first control, the Format picker.
+  if (settingsDlg.contains(document.activeElement)) document.activeElement.blur();
+};
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 

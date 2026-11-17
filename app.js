@@ -24,7 +24,11 @@ $('tab-recv').onclick = () => showTab('recv');
 
 // ---------------------------------------------------------------- settings dialog
 const settingsDlg = $('settings');
-$('btn-settings').onclick = () => settingsDlg.showModal();
+$('btn-settings').onclick = () => {
+  settingsDlg.showModal();
+  // Opening must not focus (and so highlight or open) the first control, the Format picker.
+  if (settingsDlg.contains(document.activeElement)) document.activeElement.blur();
+};
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
