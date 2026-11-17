@@ -32,6 +32,15 @@ $('btn-settings').onclick = () => {
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
+// ---------------------------------------------------------------- splash
+// The splash in the page is shown while the app opens. A copy is kept for the refresh.
+const startSplash = $('splash');
+const splashTemplate = startSplash.cloneNode(true);
+setTimeout(() => {
+  startSplash.classList.add('hide');
+  setTimeout(() => startSplash.remove(), 400);
+}, 1800);
+
 // ---------------------------------------------------------------- logo: "open on another device"
 const logo = document.querySelector('.logo');
 // The popover shows the app's QR code; the rest of the screen is blurred behind it.
@@ -55,15 +64,9 @@ for (const zone of document.querySelectorAll('.refresh-zone')) {
     zoneTaps.push(now);
     if (zoneTaps.length < 4) return;
     zoneTaps = [];
-    const splash = document.createElement('div');
-    splash.id = 'splash';
-    splash.setAttribute('role', 'status');
-    const img = document.createElement('img');
-    img.src = logo.src;
-    img.alt = 'QR XFER';
-    const msg = document.createElement('p');
-    msg.textContent = 'Refreshing …';
-    splash.append(img, msg);
+    const splash = splashTemplate.cloneNode(true);
+    splash.classList.remove('hide');
+    splash.querySelector('.splash-msg').hidden = false;
     document.body.append(splash);
     setTimeout(() => location.reload(), 900);
   });
