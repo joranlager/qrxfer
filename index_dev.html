@@ -142,8 +142,12 @@
         <span id="file-label">Choose a file, or drop one here</span>
       </label>
       <div id="preview-wrap" hidden>
-        <img id="preview" alt="Preview">
-        <p id="file-info" class="muted"></p>
+        <div class="file-row">
+          <p id="file-info" class="muted"></p>
+          <button type="button" id="btn-preview-toggle" aria-expanded="false" aria-controls="preview">Preview</button>
+          <button type="button" id="btn-remove" aria-label="Remove file" title="Remove file">&#x2715;</button>
+        </div>
+        <img id="preview" alt="Preview" hidden>
       </div>
     </section>
 

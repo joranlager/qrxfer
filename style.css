@@ -103,7 +103,7 @@ button:disabled { opacity: .5; cursor: default; }
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center;
   padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: rgba(0,0,0,.72); color: #fff; font-size: 13px;
 }
-#player-bar span { flex: 1; font-family: ui-monospace, Menlo, Consolas, monospace; }
+#player-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
 #player-bar button { padding: 5px 12px; background: #333; color: #fff; border-color: #555; }
 
 /* Receiver */
@@ -143,12 +143,18 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 /* Send view: the file card takes the space that is left and the preview shrinks to fit,
    so Start sending is always visible, even on small screens. */
 #view-send { display: flex; flex-direction: column; height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
-#view-send .file-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#view-send .file-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #view-send .start-card { flex: none; margin-bottom: 0; }
 #view-send .file-card .file-pick { flex: none; }
 #preview-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #preview-wrap #preview { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; max-height: none; object-fit: contain; }
-#preview-wrap #file-info { flex: none; margin: 8px 0 0; }
+#preview-wrap #preview { margin-top: 8px; }
+.file-row { display: flex; align-items: center; gap: 8px; }
+.file-row #file-info { flex: 1; min-width: 0; margin: 0; text-align: left; overflow-wrap: anywhere; }
+.file-row button { flex: none; padding: 6px 12px; font-size: 14px; }
+#btn-preview-toggle.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#btn-remove { width: 34px; height: 34px; padding: 0; line-height: 1; border-radius: 50%; font-size: 14px; }
+.file-card.has-file .file-pick { display: none; }
 #view-send .file-card .file-pick span { padding: 20px 12px; }
 
 /* Settings: cog in the top band opens a sheet, styled after iOS grouped lists */

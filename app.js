@@ -108,6 +108,30 @@ function saveSettings() {
   } catch {}
 }
 
+function setPreviewOpen(open) {
+  $('preview').hidden = !open;
+  $('btn-preview-toggle').setAttribute('aria-expanded', String(open));
+  $('btn-preview-toggle').classList.toggle('on', open);
+}
+$('btn-preview-toggle').onclick = () => setPreviewOpen($('preview').hidden);
+
+// Remove the selected file again: back to the empty "choose a file" state.
+$('btn-remove').onclick = () => {
+  prepareToken++;                       // cancel a preparation that is still running
+  sourceFile = null; payloadBytes = null; payloadType = ''; payloadName = '';
+  const prev = $('preview');
+  if (prev.dataset.url) URL.revokeObjectURL(prev.dataset.url);
+  prev.removeAttribute('src'); delete prev.dataset.url;
+  setPreviewOpen(false);
+  $('file').value = '';
+  $('file-label').textContent = 'Choose a file, or drop one here';
+  $('file-info').textContent = '';
+  $('preview-wrap').hidden = true;
+  dropZone.classList.remove('has-file');
+  $('btn-start').disabled = true;
+  showImageOptions(true);
+};
+
 function setSourceFile(file) {
   sourceFile = file || null;
   if (sourceFile) $('file-label').textContent = sourceFile.name;
@@ -220,17 +244,20 @@ async function prepare() {
   const sizeInfo = `${fmtBytes(bytes.length)}` + (bytes.length !== sourceFile.size ? ` (original ${fmtBytes(sourceFile.size)})` : '');
   const plainInfo = [name, asImage ? '' : (type || 'unknown type'), sizeInfo].filter(Boolean).join(' · ');
   $('file-info').textContent = plainInfo;
-  prev.hidden = !asImage;
+  // The preview starts collapsed for every new file; the Preview button expands it.
+  setPreviewOpen(false);
+  $('btn-preview-toggle').hidden = !asImage;
   if (asImage) {
     prev.onload = () => {
       $('file-info').textContent = `${name} · ${prev.naturalWidth}×${prev.naturalHeight} · ${sizeInfo}`;
     };
-    prev.onerror = () => { prev.hidden = true; };   // an image type the browser cannot display
+    prev.onerror = () => { setPreviewOpen(false); $('btn-preview-toggle').hidden = true; };   // an image type the browser cannot display
     prev.src = blobUrl; prev.dataset.url = blobUrl;
   } else {
     prev.removeAttribute('src'); prev.dataset.url = blobUrl;
   }
   $('preview-wrap').hidden = false;
+  dropZone.classList.add('has-file');
   updateEstimate();
 }
 
@@ -292,9 +319,18 @@ function drawCountdown() {
   pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
   pctx.font = `700 ${Math.round(Math.min(W, H) * 0.45)}px -apple-system, "Segoe UI", sans-serif`;
   pctx.fillText(String(Math.ceil(left / 1000)), W / 2, H / 2);
-  pctx.font = `${Math.round(18 * dpr)}px -apple-system, "Segoe UI", sans-serif`;
+  // The hint is wrapped to the screen width, so it never runs off the edge on a narrow screen.
+  const fs = Math.round(Math.min(18 * dpr, W * 0.05));
+  pctx.font = `${fs}px -apple-system, "Segoe UI", sans-serif`;
   pctx.fillStyle = '#5d6673';
-  pctx.fillText('Sending starts – aim the receiving camera at this screen', W / 2, H / 2 + Math.min(W, H) * 0.32);
+  const lines = []; let line = '';
+  for (const word of 'Sending starts – aim the receiving camera at this screen'.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (line && pctx.measureText(test).width > W * 0.88) { lines.push(line); line = word; } else line = test;
+  }
+  lines.push(line);
+  const y0 = Math.min(H / 2 + Math.min(W, H) * 0.32, H - lines.length * fs * 1.3);
+  lines.forEach((l, i) => pctx.fillText(l, W / 2, y0 + i * fs * 1.3));
   $('player-status').textContent = `Starting in ${Math.ceil(left / 1000)} s · ${enc.K} data codes`;
 }
 function countdownTick() {

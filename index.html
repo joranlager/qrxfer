@@ -119,7 +119,7 @@ button:disabled { opacity: .5; cursor: default; }
   position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center;
   padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: rgba(0,0,0,.72); color: #fff; font-size: 13px;
 }
-#player-bar span { flex: 1; font-family: ui-monospace, Menlo, Consolas, monospace; }
+#player-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
 #player-bar button { padding: 5px 12px; background: #333; color: #fff; border-color: #555; }
 
 /* Receiver */
@@ -159,12 +159,18 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 /* Send view: the file card takes the space that is left and the preview shrinks to fit,
    so Start sending is always visible, even on small screens. */
 #view-send { display: flex; flex-direction: column; height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
-#view-send .file-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#view-send .file-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #view-send .start-card { flex: none; margin-bottom: 0; }
 #view-send .file-card .file-pick { flex: none; }
 #preview-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #preview-wrap #preview { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; max-height: none; object-fit: contain; }
-#preview-wrap #file-info { flex: none; margin: 8px 0 0; }
+#preview-wrap #preview { margin-top: 8px; }
+.file-row { display: flex; align-items: center; gap: 8px; }
+.file-row #file-info { flex: 1; min-width: 0; margin: 0; text-align: left; overflow-wrap: anywhere; }
+.file-row button { flex: none; padding: 6px 12px; font-size: 14px; }
+#btn-preview-toggle.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#btn-remove { width: 34px; height: 34px; padding: 0; line-height: 1; border-radius: 50%; font-size: 14px; }
+.file-card.has-file .file-pick { display: none; }
 #view-send .file-card .file-pick span { padding: 20px 12px; }
 
 /* Settings: cog in the top band opens a sheet, styled after iOS grouped lists */
@@ -322,8 +328,12 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
         <span id="file-label">Choose a file, or drop one here</span>
       </label>
       <div id="preview-wrap" hidden>
-        <img id="preview" alt="Preview">
-        <p id="file-info" class="muted"></p>
+        <div class="file-row">
+          <p id="file-info" class="muted"></p>
+          <button type="button" id="btn-preview-toggle" aria-expanded="false" aria-controls="preview">Preview</button>
+          <button type="button" id="btn-remove" aria-label="Remove file" title="Remove file">&#x2715;</button>
+        </div>
+        <img id="preview" alt="Preview" hidden>
       </div>
     </section>
 
@@ -3061,6 +3071,30 @@ function saveSettings() {
   } catch {}
 }
 
+function setPreviewOpen(open) {
+  $('preview').hidden = !open;
+  $('btn-preview-toggle').setAttribute('aria-expanded', String(open));
+  $('btn-preview-toggle').classList.toggle('on', open);
+}
+$('btn-preview-toggle').onclick = () => setPreviewOpen($('preview').hidden);
+
+// Remove the selected file again: back to the empty "choose a file" state.
+$('btn-remove').onclick = () => {
+  prepareToken++;                       // cancel a preparation that is still running
+  sourceFile = null; payloadBytes = null; payloadType = ''; payloadName = '';
+  const prev = $('preview');
+  if (prev.dataset.url) URL.revokeObjectURL(prev.dataset.url);
+  prev.removeAttribute('src'); delete prev.dataset.url;
+  setPreviewOpen(false);
+  $('file').value = '';
+  $('file-label').textContent = 'Choose a file, or drop one here';
+  $('file-info').textContent = '';
+  $('preview-wrap').hidden = true;
+  dropZone.classList.remove('has-file');
+  $('btn-start').disabled = true;
+  showImageOptions(true);
+};
+
 function setSourceFile(file) {
   sourceFile = file || null;
   if (sourceFile) $('file-label').textContent = sourceFile.name;
@@ -3173,17 +3207,20 @@ async function prepare() {
   const sizeInfo = `${fmtBytes(bytes.length)}` + (bytes.length !== sourceFile.size ? ` (original ${fmtBytes(sourceFile.size)})` : '');
   const plainInfo = [name, asImage ? '' : (type || 'unknown type'), sizeInfo].filter(Boolean).join(' · ');
   $('file-info').textContent = plainInfo;
-  prev.hidden = !asImage;
+  // The preview starts collapsed for every new file; the Preview button expands it.
+  setPreviewOpen(false);
+  $('btn-preview-toggle').hidden = !asImage;
   if (asImage) {
     prev.onload = () => {
       $('file-info').textContent = `${name} · ${prev.naturalWidth}×${prev.naturalHeight} · ${sizeInfo}`;
     };
-    prev.onerror = () => { prev.hidden = true; };   // an image type the browser cannot display
+    prev.onerror = () => { setPreviewOpen(false); $('btn-preview-toggle').hidden = true; };   // an image type the browser cannot display
     prev.src = blobUrl; prev.dataset.url = blobUrl;
   } else {
     prev.removeAttribute('src'); prev.dataset.url = blobUrl;
   }
   $('preview-wrap').hidden = false;
+  dropZone.classList.add('has-file');
   updateEstimate();
 }
 
@@ -3245,9 +3282,18 @@ function drawCountdown() {
   pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
   pctx.font = `700 ${Math.round(Math.min(W, H) * 0.45)}px -apple-system, "Segoe UI", sans-serif`;
   pctx.fillText(String(Math.ceil(left / 1000)), W / 2, H / 2);
-  pctx.font = `${Math.round(18 * dpr)}px -apple-system, "Segoe UI", sans-serif`;
+  // The hint is wrapped to the screen width, so it never runs off the edge on a narrow screen.
+  const fs = Math.round(Math.min(18 * dpr, W * 0.05));
+  pctx.font = `${fs}px -apple-system, "Segoe UI", sans-serif`;
   pctx.fillStyle = '#5d6673';
-  pctx.fillText('Sending starts – aim the receiving camera at this screen', W / 2, H / 2 + Math.min(W, H) * 0.32);
+  const lines = []; let line = '';
+  for (const word of 'Sending starts – aim the receiving camera at this screen'.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (line && pctx.measureText(test).width > W * 0.88) { lines.push(line); line = word; } else line = test;
+  }
+  lines.push(line);
+  const y0 = Math.min(H / 2 + Math.min(W, H) * 0.32, H - lines.length * fs * 1.3);
+  lines.forEach((l, i) => pctx.fillText(l, W / 2, y0 + i * fs * 1.3));
   $('player-status').textContent = `Starting in ${Math.ceil(left / 1000)} s · ${enc.K} data codes`;
 }
 function countdownTick() {
