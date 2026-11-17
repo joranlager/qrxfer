@@ -57,10 +57,8 @@
   <!-- ===================== SETTINGS ===================== -->
   <dialog id="settings" aria-labelledby="settings-title">
     <form method="dialog">
-      <div class="dlg-head">
-        <h2 id="settings-title">Settings</h2>
-        <button class="primary" value="close">Done</button>
-      </div>
+      <h2 id="settings-title">Settings</h2>
+      <div class="dlg-body">
       <h3>Send</h3>
       <div class="grid">
         <label data-image-only>Image format
@@ -107,6 +105,9 @@
           </select>
         </label>
       </div>
+      </div>
+      <!-- Done sits at the bottom, within thumb reach, and stays visible while the settings scroll -->
+      <div class="dlg-foot"><button class="primary" value="close">Done</button></div>
     </form>
   </dialog>
 
