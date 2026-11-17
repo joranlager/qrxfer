@@ -160,19 +160,45 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   .open-here-text { min-width: 0; flex-basis: 100%; }
 }
 
-/* Settings: cog in the top band opens a modal dialog */
+/* Settings: cog in the top band opens a sheet, styled after iOS grouped lists */
 .cog { flex: none; height: var(--logo-h); width: var(--logo-h); padding: 0; display: grid; place-items: center; border-radius: 8px; background: var(--card); }
 .cog svg { display: block; }
-/* A bottom sheet: sits at the bottom of the screen, the settings scroll, Done stays fixed at the bottom. */
-#settings { width: min(560px, calc(100% - 24px)); max-height: calc(100dvh - 24px - env(safe-area-inset-top)); margin: auto auto calc(12px + env(safe-area-inset-bottom)); padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--text); }
-#settings::backdrop { background: rgba(0, 0, 0, .5); }
+#settings {
+  --sheet: #f2f2f7; --group: #ffffff; --sep: rgba(60, 60, 67, .18); --label2: rgba(60, 60, 67, .6); --blue: #007aff;
+  width: min(520px, calc(100% - 16px)); max-height: calc(100dvh - 16px - env(safe-area-inset-top));
+  margin: auto auto calc(8px + env(safe-area-inset-bottom)); padding: 20px 16px 16px;
+  border: 0; border-radius: 22px; background: var(--sheet); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+}
+@media (prefers-color-scheme: dark) {
+  #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
+}
+#settings::backdrop { background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #settings[open] { display: flex; flex-direction: column; }
 #settings form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-#settings h2 { margin: 0 0 4px; }
-.dlg-body { overflow-y: auto; overscroll-behavior: contain; flex: 1; min-height: 0; padding-bottom: 8px; }
-.dlg-foot { padding-top: 12px; }
-.dlg-foot button { width: 100%; padding: 14px; font-size: 17px; }
-#settings h3 { font-size: 14px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+#settings h2 { margin: 0 0 12px; text-align: center; font-size: 17px; font-weight: 600; }
+.dlg-body { overflow-y: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
+#settings h3 { margin: 18px 16px 6px; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .02em; color: var(--label2); }
+#settings .dlg-body > :first-child h3, #settings .dlg-body > h3:first-child { margin-top: 4px; }
+.group { background: var(--group); border-radius: 12px; overflow: hidden; }
+.group label { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 16px; font-size: 17px; }
+.group label > span { white-space: nowrap; }
+.group label ~ label { border-top: .5px solid var(--sep); }
+.group label.slider { flex-wrap: wrap; padding-top: 11px; padding-bottom: 8px; }
+.group label.slider output { color: var(--label2); font-variant-numeric: tabular-nums; }
+.group label.slider input { width: 100%; margin: 6px 0 0; accent-color: var(--blue); }
+.group input[type=number], .group select {
+  border: 0; background: none; padding: 10px 0; margin: 0; font: inherit; color: var(--label2);
+  text-align: right; text-align-last: right; min-width: 0; outline: none;
+}
+.group input[type=number] { width: 7em; -moz-appearance: textfield; }
+.group input[type=number]::-webkit-outer-spin-button, .group input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.group select { -webkit-appearance: none; appearance: none; padding-right: 18px; cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'%3E%3Cpath d='M2 6l3-3 3 3M2 10l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right center / 10px 16px no-repeat; }
+.dlg-foot { padding-top: 16px; }
+.dlg-foot button { width: 100%; padding: 14px; font-size: 17px; font-weight: 600; border: 0; border-radius: 14px; background: var(--blue); color: #fff; }
+.dlg-foot button:active { opacity: .8; }
 
 /* Splash shown while the page refreshes (four taps on the logo) */
 .logo { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -205,54 +231,60 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
     <form method="dialog">
       <h2 id="settings-title">Settings</h2>
       <div class="dlg-body">
-      <h3>Send</h3>
-      <div class="grid">
-        <label data-image-only>Image format
-          <select id="opt-format">
-            <option value="image/jpeg">JPEG (compressed)</option>
-            <option value="image/webp">WebP (compressed)</option>
-            <option value="original">Original file (no changes)</option>
-          </select>
-        </label>
-        <label data-image-only>Max width/height (px)
-          <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64">
-        </label>
-        <label data-image-only>Quality <output id="out-quality">0.75</output>
-          <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
-        </label>
-        <label>QR codes per packet
-          <input type="number" id="opt-perpacket" value="10" min="1" max="30">
-        </label>
-        <label>Bytes per QR code
-          <input type="number" id="opt-chunk" value="380" min="100" max="1800" step="10">
-        </label>
-        <label>Time per packet (ms)
-          <input type="number" id="opt-interval" value="300" min="60" max="5000" step="20">
-        </label>
-        <label>Countdown before start (s)
-          <input type="number" id="opt-countdown" value="5" min="0" max="120" step="1">
-        </label>
-        <label>Error correction
-          <select id="opt-ecc">
-            <option value="L">L (most data)</option>
-            <option value="M" selected>M (recommended)</option>
-            <option value="Q">Q (robust)</option>
-          </select>
-        </label>
+        <div data-image-only>
+          <h3>Image</h3>
+          <div class="group">
+            <label><span>Format</span>
+              <select id="opt-format">
+                <option value="image/jpeg">JPEG</option>
+                <option value="image/webp">WebP</option>
+                <option value="original">Original</option>
+              </select>
+            </label>
+            <label><span>Max size (px)</span>
+              <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64" inputmode="numeric">
+            </label>
+            <label class="slider"><span>Quality</span><output id="out-quality">0.75</output>
+              <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
+            </label>
+          </div>
+        </div>
+
+        <h3>Transmission</h3>
+        <div class="group">
+          <label><span>Codes per packet</span>
+            <input type="number" id="opt-perpacket" value="10" min="1" max="30" inputmode="numeric">
+          </label>
+          <label><span>Bytes per code</span>
+            <input type="number" id="opt-chunk" value="380" min="100" max="1800" step="10" inputmode="numeric">
+          </label>
+          <label><span>Packet time (ms)</span>
+            <input type="number" id="opt-interval" value="300" min="60" max="5000" step="20" inputmode="numeric">
+          </label>
+          <label><span>Countdown (s)</span>
+            <input type="number" id="opt-countdown" value="5" min="0" max="120" step="1" inputmode="numeric">
+          </label>
+          <label><span>Error correction</span>
+            <select id="opt-ecc">
+              <option value="L">L · More data</option>
+              <option value="M" selected>M · Balanced</option>
+              <option value="Q">Q · Robust</option>
+            </select>
+          </label>
+        </div>
+
+        <h3>Camera</h3>
+        <div class="group">
+          <label><span>Resolution</span>
+            <select id="opt-res">
+              <option value="1280x720">720p</option>
+              <option value="1920x1080" selected>1080p</option>
+              <option value="2560x1440">1440p</option>
+              <option value="3840x2160">4K</option>
+            </select>
+          </label>
+        </div>
       </div>
-      <h3>Receive</h3>
-      <div class="grid">
-        <label>Camera resolution
-          <select id="opt-res">
-            <option value="1280x720">720p</option>
-            <option value="1920x1080" selected>1080p</option>
-            <option value="2560x1440">1440p</option>
-            <option value="3840x2160">4K</option>
-          </select>
-        </label>
-      </div>
-      </div>
-      <!-- Done sits at the bottom, within thumb reach, and stays visible while the settings scroll -->
       <div class="dlg-foot"><button class="primary" value="close">Done</button></div>
     </form>
   </dialog>
