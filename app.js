@@ -166,6 +166,7 @@ function showImageOptions(on) {
 // Size and quality only matter when the image is re-encoded, not when the original file is kept.
 function updateCompressOptions() {
   for (const el of document.querySelectorAll('[data-compress-only]')) el.hidden = opt.format.value === 'original';
+  $('format-heading').textContent = opt.format.selectedOptions[0]?.textContent || '';
 }
 
 async function prepare() {

@@ -180,7 +180,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 #settings h2 { margin: 0 0 12px; text-align: center; font-size: 17px; font-weight: 600; }
 .dlg-body { overflow-y: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
 #settings h3 { margin: 18px 16px 6px; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .02em; color: var(--label2); }
-#settings .dlg-body > :first-child h3, #settings .dlg-body > h3:first-child { margin-top: 4px; }
+#settings .dlg-body > :first-child > h3:first-child, #settings .dlg-body > h3:first-child { margin-top: 4px; }
 .group { background: var(--group); border-radius: 12px; overflow: hidden; }
 .group label { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 16px; font-size: 17px; }
 .group label > span { white-space: nowrap; }
@@ -232,21 +232,27 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
       <h2 id="settings-title">Settings</h2>
       <div class="dlg-body">
         <div data-image-only>
-          <h3>Image</h3>
+          <h3>File format</h3>
           <div class="group">
             <label><span>Format</span>
               <select id="opt-format">
-                <option value="image/jpeg">JPEG</option>
+                <option value="image/jpeg" selected>JPEG</option>
                 <option value="image/webp">WebP</option>
                 <option value="original">Keep original</option>
               </select>
             </label>
-            <label data-compress-only><span>Max size (px)</span>
-              <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64" inputmode="numeric">
-            </label>
-            <label class="slider" data-compress-only><span>Quality</span><output id="out-quality">0.75</output>
-              <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
-            </label>
+          </div>
+          <!-- Settings specific to the chosen format; hidden when the original file is kept -->
+          <div data-compress-only>
+            <h3 id="format-heading">JPEG</h3>
+            <div class="group">
+              <label><span>Max size (px)</span>
+                <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64" inputmode="numeric">
+              </label>
+              <label class="slider"><span>Quality</span><output id="out-quality">0.75</output>
+                <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
+              </label>
+            </div>
           </div>
         </div>
 
@@ -3105,6 +3111,7 @@ function showImageOptions(on) {
 // Size and quality only matter when the image is re-encoded, not when the original file is kept.
 function updateCompressOptions() {
   for (const el of document.querySelectorAll('[data-compress-only]')) el.hidden = opt.format.value === 'original';
+  $('format-heading').textContent = opt.format.selectedOptions[0]?.textContent || '';
 }
 
 async function prepare() {
