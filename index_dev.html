@@ -162,13 +162,40 @@
   <div id="player" hidden>
     <canvas id="player-canvas"></canvas>
     <div id="player-bar">
-      <span id="player-status"></span>
-      <button id="btn-slower" title="Slower">−</button>
-      <button id="btn-faster" title="Faster">+</button>
-      <button id="btn-pause">Pause</button>
-      <button id="btn-stop">Stop</button>
+      <div class="stepper" role="group" aria-label="Wait between packets">
+        <button id="btn-faster" class="round" aria-label="Shorter wait" title="Shorter wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+        <div class="stepper-val"><b id="wait-val">300 ms</b><small>Wait</small></div>
+        <button id="btn-slower" class="round" aria-label="Longer wait" title="Longer wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <button id="btn-pause" class="action" aria-label="Pause">
+        <span class="ic">
+          <svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></svg>
+          <svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l11-6.8a1 1 0 0 0 0-1.72l-11-6.8A1 1 0 0 0 8 5.2z"/></svg>
+        </span>
+        <span class="lbl">Pause</span>
+      </button>
+      <button id="btn-stop" class="action stop" aria-label="Stop">
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="3"/></svg></span>
+        <span class="lbl">Stop</span>
+      </button>
     </div>
   </div>
+
+  <!-- Stop must be acknowledged -->
+  <dialog id="confirm-stop" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">Stop sending?</h2>
+      <p>The transfer will end. You can start again from the beginning.</p>
+      <div class="confirm-actions">
+        <button value="cancel">Keep sending</button>
+        <button value="stop" class="danger">Stop</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- ===================== RECEIVE ===================== -->
   <main id="view-recv" class="view" hidden>

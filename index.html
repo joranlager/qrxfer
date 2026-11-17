@@ -117,12 +117,36 @@ button:disabled { opacity: .5; cursor: default; }
 /* The player fills the screen below the top band, so no QR code is ever drawn under the band. */
 #player { position: fixed; top: var(--band-h, 72px); right: 0; bottom: 0; left: 0; background: #fff; z-index: 10; }
 #player-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Bottom controls: a translucent bar with icon buttons, in the style of iOS media controls */
 #player-bar {
-  position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center;
-  padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: rgba(0,0,0,.72); color: #fff; font-size: 13px;
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); color: #fff;
+  background: rgba(28, 28, 30, .9); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
-#player-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
-#player-bar button { padding: 5px 12px; background: #333; color: #fff; border-color: #555; }
+#player-bar svg { width: 22px; height: 22px; display: block; fill: currentColor; stroke: none; }
+#player-bar button { font: inherit; border: 0; color: #fff; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
+#player-bar button:active { opacity: .6; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper .round { width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+#player-bar .stepper .round svg { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; width: 18px; height: 18px; }
+.stepper-val { display: flex; flex-direction: column; align-items: center; min-width: 64px; line-height: 1.15; }
+.stepper-val b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stepper-val small { font-size: 11px; color: rgba(235, 235, 245, .6); }
+#player-bar .action { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; min-width: 56px; }
+#player-bar .action .ic { width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+#player-bar .action .lbl { font-size: 11px; color: rgba(235, 235, 245, .75); }
+#player-bar .action.stop .ic { background: #ff453a; }
+#player-bar .action svg[hidden] { display: none; }
+
+/* Alert asking for confirmation before stopping */
+#confirm-stop { width: min(300px, calc(100% - 48px)); padding: 20px 16px 12px; border: 0; border-radius: 16px; text-align: center; background: var(--card); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+#confirm-stop::backdrop { background: rgba(0, 0, 0, .4); }
+#confirm-stop h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+#confirm-stop p { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+.confirm-actions { display: flex; flex-direction: column; gap: 8px; }
+.confirm-actions button { width: 100%; padding: 12px; font-size: 17px; border-radius: 12px; border: 0; background: var(--bg); color: #007aff; }
+.confirm-actions button.danger { background: #ff453a; color: #fff; font-weight: 600; }
 
 /* Receiver */
 .video-wrap { position: relative; margin-top: 12px; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; }
@@ -353,13 +377,40 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   <div id="player" hidden>
     <canvas id="player-canvas"></canvas>
     <div id="player-bar">
-      <span id="player-status"></span>
-      <button id="btn-slower" title="Slower">−</button>
-      <button id="btn-faster" title="Faster">+</button>
-      <button id="btn-pause">Pause</button>
-      <button id="btn-stop">Stop</button>
+      <div class="stepper" role="group" aria-label="Wait between packets">
+        <button id="btn-faster" class="round" aria-label="Shorter wait" title="Shorter wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+        <div class="stepper-val"><b id="wait-val">300 ms</b><small>Wait</small></div>
+        <button id="btn-slower" class="round" aria-label="Longer wait" title="Longer wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <button id="btn-pause" class="action" aria-label="Pause">
+        <span class="ic">
+          <svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></svg>
+          <svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l11-6.8a1 1 0 0 0 0-1.72l-11-6.8A1 1 0 0 0 8 5.2z"/></svg>
+        </span>
+        <span class="lbl">Pause</span>
+      </button>
+      <button id="btn-stop" class="action stop" aria-label="Stop">
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="3"/></svg></span>
+        <span class="lbl">Stop</span>
+      </button>
     </div>
   </div>
+
+  <!-- Stop must be acknowledged -->
+  <dialog id="confirm-stop" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">Stop sending?</h2>
+      <p>The transfer will end. You can start again from the beginning.</p>
+      <div class="confirm-actions">
+        <button value="cancel">Keep sending</button>
+        <button value="stop" class="danger">Stop</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- ===================== RECEIVE ===================== -->
   <main id="view-recv" class="view" hidden>
@@ -3309,7 +3360,6 @@ function drawCountdown() {
   lines.push(line);
   const y0 = Math.min(H / 2 + Math.min(W, H) * 0.32, H - lines.length * fs * 1.3);
   lines.forEach((l, i) => pctx.fillText(l, W / 2, y0 + i * fs * 1.3));
-  $('player-status').textContent = `Starting in ${Math.ceil(left / 1000)} s · ${enc.K} data codes`;
 }
 function countdownTick() {
   if (!playing || paused) return;
@@ -3336,9 +3386,6 @@ function drawPacket() {
     const y = Math.round(offY + Math.floor(k / g.cols) * g.cell + (g.cell - size) / 2);
     pctx.drawImage(q, x, y, size, size);
   });
-  const n = enc.count, K = enc.K;
-  $('player-status').textContent = (n <= K ? `Data ${n}/${K}` : `Data done (${K}) · parity ${n - K}`) +
-    ` · ${interval} ms · ${perPacket} per packet`;
 }
 
 // Each packet is the next codes from the encoder: first all data codes, then endless parity codes.
@@ -3360,7 +3407,8 @@ function startPlayer() {
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
   if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
-  $('btn-pause').textContent = 'Pause';
+  setPauseUI();
+  showInterval();
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
@@ -3380,10 +3428,22 @@ function stopPlayer() {
 }
 
 $('btn-start').onclick = startPlayer;
-$('btn-stop').onclick = stopPlayer;
+// Stop asks for confirmation; sending carries on behind the dialog until it is acknowledged.
+const stopDlg = $('confirm-stop');
+$('btn-stop').onclick = () => stopDlg.showModal();
+stopDlg.addEventListener('close', () => { if (stopDlg.returnValue === 'stop') stopPlayer(); stopDlg.returnValue = ''; });
+
+// Pause shows Resume (with a play icon) while paused.
+function setPauseUI() {
+  const b = $('btn-pause');
+  b.querySelector('.ic-pause').toggleAttribute('hidden', paused);
+  b.querySelector('.ic-play').toggleAttribute('hidden', !paused);
+  b.querySelector('.lbl').textContent = paused ? 'Resume' : 'Pause';
+  b.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
+}
 $('btn-pause').onclick = () => {
   paused = !paused;
-  $('btn-pause').textContent = paused ? 'Resume' : 'Pause';
+  setPauseUI();
   if (countdownEnd) {
     // Pausing during the countdown freezes the number. Resume counts on from there.
     if (paused) countdownLeft = Math.max(0, countdownEnd - performance.now());
@@ -3392,8 +3452,16 @@ $('btn-pause').onclick = () => {
   }
   if (!paused) { clearTimeout(timer); tick(); }
 };
-$('btn-slower').onclick = () => { interval = Math.min(5000, Math.round(interval * 1.25)); drawPacket(); };
-$('btn-faster').onclick = () => { interval = Math.max(30, Math.round(interval / 1.25)); drawPacket(); };
+// Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
+function showInterval() { $('wait-val').textContent = `${interval} ms`; }
+function stepInterval(f) {
+  const next = Math.min(5000, Math.max(30, Math.round((interval * f) / 10) * 10));
+  interval = next !== interval ? next : Math.min(5000, Math.max(30, interval + (f > 1 ? 10 : -10)));
+  showInterval();
+  drawPacket();
+}
+$('btn-slower').onclick = () => stepInterval(1.25);
+$('btn-faster').onclick = () => stepInterval(0.8);
 // The top band stays visible while sending. The player starts right below it (CSS var --band-h),
 // so QR codes never end up under the band or the phone's notch. Re-measure whenever the band's
 // height changes, e.g. when the phone is rotated, and redraw so every QR code stays a square.

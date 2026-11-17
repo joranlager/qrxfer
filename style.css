@@ -101,12 +101,36 @@ button:disabled { opacity: .5; cursor: default; }
 /* The player fills the screen below the top band, so no QR code is ever drawn under the band. */
 #player { position: fixed; top: var(--band-h, 72px); right: 0; bottom: 0; left: 0; background: #fff; z-index: 10; }
 #player-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Bottom controls: a translucent bar with icon buttons, in the style of iOS media controls */
 #player-bar {
-  position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center;
-  padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: rgba(0,0,0,.72); color: #fff; font-size: 13px;
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); color: #fff;
+  background: rgba(28, 28, 30, .9); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
-#player-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
-#player-bar button { padding: 5px 12px; background: #333; color: #fff; border-color: #555; }
+#player-bar svg { width: 22px; height: 22px; display: block; fill: currentColor; stroke: none; }
+#player-bar button { font: inherit; border: 0; color: #fff; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
+#player-bar button:active { opacity: .6; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper .round { width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+#player-bar .stepper .round svg { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; width: 18px; height: 18px; }
+.stepper-val { display: flex; flex-direction: column; align-items: center; min-width: 64px; line-height: 1.15; }
+.stepper-val b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stepper-val small { font-size: 11px; color: rgba(235, 235, 245, .6); }
+#player-bar .action { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; min-width: 56px; }
+#player-bar .action .ic { width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+#player-bar .action .lbl { font-size: 11px; color: rgba(235, 235, 245, .75); }
+#player-bar .action.stop .ic { background: #ff453a; }
+#player-bar .action svg[hidden] { display: none; }
+
+/* Alert asking for confirmation before stopping */
+#confirm-stop { width: min(300px, calc(100% - 48px)); padding: 20px 16px 12px; border: 0; border-radius: 16px; text-align: center; background: var(--card); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+#confirm-stop::backdrop { background: rgba(0, 0, 0, .4); }
+#confirm-stop h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+#confirm-stop p { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+.confirm-actions { display: flex; flex-direction: column; gap: 8px; }
+.confirm-actions button { width: 100%; padding: 12px; font-size: 17px; border-radius: 12px; border: 0; background: var(--bg); color: #007aff; }
+.confirm-actions button.danger { background: #ff453a; color: #fff; font-weight: 600; }
 
 /* Receiver */
 .video-wrap { position: relative; margin-top: 12px; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; }

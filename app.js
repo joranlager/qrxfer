@@ -339,7 +339,6 @@ function drawCountdown() {
   lines.push(line);
   const y0 = Math.min(H / 2 + Math.min(W, H) * 0.32, H - lines.length * fs * 1.3);
   lines.forEach((l, i) => pctx.fillText(l, W / 2, y0 + i * fs * 1.3));
-  $('player-status').textContent = `Starting in ${Math.ceil(left / 1000)} s · ${enc.K} data codes`;
 }
 function countdownTick() {
   if (!playing || paused) return;
@@ -366,9 +365,6 @@ function drawPacket() {
     const y = Math.round(offY + Math.floor(k / g.cols) * g.cell + (g.cell - size) / 2);
     pctx.drawImage(q, x, y, size, size);
   });
-  const n = enc.count, K = enc.K;
-  $('player-status').textContent = (n <= K ? `Data ${n}/${K}` : `Data done (${K}) · parity ${n - K}`) +
-    ` · ${interval} ms · ${perPacket} per packet`;
 }
 
 // Each packet is the next codes from the encoder: first all data codes, then endless parity codes.
@@ -390,7 +386,8 @@ function startPlayer() {
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
   if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
-  $('btn-pause').textContent = 'Pause';
+  setPauseUI();
+  showInterval();
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
@@ -410,10 +407,22 @@ function stopPlayer() {
 }
 
 $('btn-start').onclick = startPlayer;
-$('btn-stop').onclick = stopPlayer;
+// Stop asks for confirmation; sending carries on behind the dialog until it is acknowledged.
+const stopDlg = $('confirm-stop');
+$('btn-stop').onclick = () => stopDlg.showModal();
+stopDlg.addEventListener('close', () => { if (stopDlg.returnValue === 'stop') stopPlayer(); stopDlg.returnValue = ''; });
+
+// Pause shows Resume (with a play icon) while paused.
+function setPauseUI() {
+  const b = $('btn-pause');
+  b.querySelector('.ic-pause').toggleAttribute('hidden', paused);
+  b.querySelector('.ic-play').toggleAttribute('hidden', !paused);
+  b.querySelector('.lbl').textContent = paused ? 'Resume' : 'Pause';
+  b.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
+}
 $('btn-pause').onclick = () => {
   paused = !paused;
-  $('btn-pause').textContent = paused ? 'Resume' : 'Pause';
+  setPauseUI();
   if (countdownEnd) {
     // Pausing during the countdown freezes the number. Resume counts on from there.
     if (paused) countdownLeft = Math.max(0, countdownEnd - performance.now());
@@ -422,8 +431,16 @@ $('btn-pause').onclick = () => {
   }
   if (!paused) { clearTimeout(timer); tick(); }
 };
-$('btn-slower').onclick = () => { interval = Math.min(5000, Math.round(interval * 1.25)); drawPacket(); };
-$('btn-faster').onclick = () => { interval = Math.max(30, Math.round(interval / 1.25)); drawPacket(); };
+// Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
+function showInterval() { $('wait-val').textContent = `${interval} ms`; }
+function stepInterval(f) {
+  const next = Math.min(5000, Math.max(30, Math.round((interval * f) / 10) * 10));
+  interval = next !== interval ? next : Math.min(5000, Math.max(30, interval + (f > 1 ? 10 : -10)));
+  showInterval();
+  drawPacket();
+}
+$('btn-slower').onclick = () => stepInterval(1.25);
+$('btn-faster').onclick = () => stepInterval(0.8);
 // The top band stays visible while sending. The player starts right below it (CSS var --band-h),
 // so QR codes never end up under the band or the phone's notch. Re-measure whenever the band's
 // height changes, e.g. when the phone is rotated, and redraw so every QR code stays a square.
