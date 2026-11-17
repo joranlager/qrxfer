@@ -331,6 +331,21 @@ function drawCountdown() {
   pctx.fillStyle = '#15181d';
   pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
   pctx.font = `700 ${Math.round(Math.min(W, H) * 0.45)}px -apple-system, "Segoe UI", sans-serif`;
+  if (paused) {
+    // Paused: a pause symbol sits in the centre. Tapping it resumes the countdown.
+    const r = Math.min(W, H) * 0.16;
+    pctx.fillStyle = '#15181d';
+    pctx.beginPath(); pctx.arc(W / 2, H / 2, r, 0, Math.PI * 2); pctx.fill();
+    pctx.fillStyle = '#fff';
+    const bw = r * 0.26, bh = r * 0.9, gap = r * 0.22;
+    for (const x of [W / 2 - gap / 2 - bw, W / 2 + gap / 2]) {
+      pctx.beginPath(); pctx.roundRect(x, H / 2 - bh / 2, bw, bh, bw * 0.35); pctx.fill();
+    }
+    pctx.fillStyle = '#5d6673';
+    pctx.font = `${Math.round(Math.min(18 * dpr, W * 0.05))}px -apple-system, "Segoe UI", sans-serif`;
+    pctx.fillText('Paused – tap to resume', W / 2, H / 2 + r + 32 * dpr);
+    return;
+  }
   pctx.fillText(String(Math.ceil(left / 1000)), W / 2, H / 2);
   // The hint is wrapped to the screen width, so it never runs off the edge on a narrow screen.
   const fs = Math.round(Math.min(18 * dpr, W * 0.05));
@@ -391,7 +406,6 @@ function startPlayer() {
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
   if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
-  setPauseUI();
   showInterval();
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
@@ -417,25 +431,20 @@ const stopDlg = $('confirm-stop');
 $('btn-stop').onclick = () => stopDlg.showModal();
 stopDlg.addEventListener('close', () => { if (stopDlg.returnValue === 'stop') stopPlayer(); stopDlg.returnValue = ''; });
 
-// Pause shows Resume (with a play icon) while paused.
-function setPauseUI() {
-  const b = $('btn-pause');
-  b.querySelector('.ic-pause').toggleAttribute('hidden', paused);
-  b.querySelector('.ic-play').toggleAttribute('hidden', !paused);
-  b.querySelector('.lbl').textContent = paused ? 'Resume' : 'Pause';
-  b.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
-}
-$('btn-pause').onclick = () => {
-  paused = !paused;
-  setPauseUI();
-  if (countdownEnd) {
-    // Pausing during the countdown freezes the number. Resume counts on from there.
-    if (paused) countdownLeft = Math.max(0, countdownEnd - performance.now());
-    else { countdownEnd = performance.now() + countdownLeft; clearTimeout(timer); countdownTick(); }
-    return;
+// Pause only exists during the countdown: tap the countdown screen to pause it, tap the pause symbol to resume.
+pc.addEventListener('click', () => {
+  if (!playing || !countdownEnd) return;
+  clearTimeout(timer);
+  if (!paused) {
+    paused = true;
+    countdownLeft = Math.max(0, countdownEnd - performance.now());
+    drawCountdown();
+  } else {
+    paused = false;
+    countdownEnd = performance.now() + countdownLeft;
+    countdownTick();
   }
-  if (!paused) { clearTimeout(timer); tick(); }
-};
+});
 // Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
 function showInterval() { $('wait-val').textContent = `${interval} ms`; }
 function stepInterval(f) {

@@ -23,6 +23,9 @@
   }
 }
 * { box-sizing: border-box; }
+/* No double-tap zoom: quick repeated taps (on + and −, for instance) must never resize the screen. */
+html, body, button, #player { touch-action: manipulation; }
+#player, #player-bar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }
 html { scroll-padding-top: calc(var(--band-h, 72px) + 8px); }
