@@ -22,6 +22,12 @@ function showTab(name) {
 $('tab-send').onclick = () => showTab('send');
 $('tab-recv').onclick = () => showTab('recv');
 
+// ---------------------------------------------------------------- settings dialog
+const settingsDlg = $('settings');
+$('btn-settings').onclick = () => settingsDlg.showModal();
+// Tapping the backdrop closes it
+settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
 async function keepAwake(on) {

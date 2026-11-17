@@ -143,3 +143,12 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   .open-here { justify-content: center; text-align: center; }
   .open-here-text { min-width: 0; flex-basis: 100%; }
 }
+
+/* Settings: cog in the top band opens a modal dialog */
+.cog { flex: none; height: var(--logo-h); width: var(--logo-h); padding: 0; display: grid; place-items: center; border-radius: 8px; background: var(--card); }
+.cog svg { display: block; }
+#settings { width: min(560px, calc(100% - 24px)); max-height: calc(100% - 24px); padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--text); }
+#settings::backdrop { background: rgba(0, 0, 0, .5); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.dlg-head h2 { margin: 0; }
+#settings h3 { font-size: 14px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
