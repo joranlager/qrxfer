@@ -35,6 +35,7 @@ settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) set
 // ---------------------------------------------------------------- splash
 // The splash in the page is shown while the app opens. A copy is kept for the refresh.
 const startSplash = $('splash');
+if (document.documentElement.classList.contains('no-splash')) startSplash.remove();
 const splashTemplate = startSplash.cloneNode(true);
 setTimeout(() => {
   startSplash.classList.add('hide');
@@ -66,6 +67,7 @@ for (const zone of document.querySelectorAll('.refresh-zone')) {
     zoneTaps = [];
     const splash = splashTemplate.cloneNode(true);
     splash.classList.remove('hide');
+    splash.classList.add('refreshing');   // stays visible even on a page that was itself reloaded
     splash.querySelector('.splash-msg').hidden = false;
     document.body.append(splash);
     setTimeout(() => location.reload(), 900);

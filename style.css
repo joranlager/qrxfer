@@ -228,6 +228,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 
 /* Splash: shown while the app opens and while it refreshes. A ring runs around the logo, which keeps its size. */
 #splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg); transition: opacity .25s ease; }
+html.no-splash #splash:not(.refreshing) { display: none; }
 #splash.hide { opacity: 0; pointer-events: none; }
 /* The logo and ring sit at the exact centre; the texts are placed around them, so nothing shifts when "Refreshing" appears. */
 .splash-mark { position: relative; width: min(39vw, 170px); aspect-ratio: 1; display: grid; place-items: center; }
