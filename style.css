@@ -67,7 +67,9 @@ h2 { font-size: 16px; margin: 0 0 12px; }
 .tabs { flex: none; white-space: nowrap; margin-left: auto; display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px; height: var(--logo-h); }
 .tabs button { border: 0; background: none; height: 100%; padding: 0 10px; font-size: 13px; line-height: 1.2; border-radius: 6px; color: var(--text); }
 .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text); }
-.view { max-width: 760px; margin: 0 auto; padding: 0 16px 24px; }
+.view { max-width: 760px; margin: 0 auto; padding: 0 16px; display: flex; flex-direction: column; min-height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
+/* The empty strip at the bottom of Send and Receive: tap it four times to refresh the page. */
+.refresh-zone { flex: none; height: 64px; margin-top: auto; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
 .muted { color: var(--muted); font-size: 14px; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
@@ -133,18 +135,21 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 #recv-status { margin-top: 4px; }
 
 /* "Open on another device": a popover under the top band, opened by pressing the logo */
-.open-here { position: fixed; z-index: 25; top: calc(var(--band-h, 72px) + 8px); left: 50%; transform: translateX(-50%);
+.open-here { position: fixed; z-index: 41; top: calc(var(--band-h, 72px) + 8px); left: 50%; transform: translateX(-50%);
   width: min(320px, calc(100% - 24px)); margin: 0; text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); max-height: calc(100dvh - var(--band-h, 72px) - 24px); overflow: auto; }
 .open-here-qr { display: inline-block; background: #fff; border-radius: 10px; line-height: 0; }
 #app-qr { display: block; width: 200px; height: 200px; max-width: 100%; }
 .open-here-text h2 { margin: 12px 0 4px; }
 .open-here-text p { margin: 0; }
 
+#scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .25); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
 /* Send view: the file card takes the space that is left and the preview shrinks to fit,
    so Start sending is always visible, even on small screens. */
-#view-send { display: flex; flex-direction: column; height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
+#view-send { height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
 #view-send .file-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #view-send .start-card { flex: none; margin-bottom: 0; }
+#view-send .refresh-zone { margin-top: 0; }
 #view-send .file-card .file-pick { flex: none; }
 #preview-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #preview-wrap #preview { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; max-height: none; object-fit: contain; }

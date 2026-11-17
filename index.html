@@ -83,7 +83,9 @@ h2 { font-size: 16px; margin: 0 0 12px; }
 .tabs { flex: none; white-space: nowrap; margin-left: auto; display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px; height: var(--logo-h); }
 .tabs button { border: 0; background: none; height: 100%; padding: 0 10px; font-size: 13px; line-height: 1.2; border-radius: 6px; color: var(--text); }
 .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text); }
-.view { max-width: 760px; margin: 0 auto; padding: 0 16px 24px; }
+.view { max-width: 760px; margin: 0 auto; padding: 0 16px; display: flex; flex-direction: column; min-height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
+/* The empty strip at the bottom of Send and Receive: tap it four times to refresh the page. */
+.refresh-zone { flex: none; height: 64px; margin-top: auto; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
 .muted { color: var(--muted); font-size: 14px; }
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
@@ -149,18 +151,21 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 #recv-status { margin-top: 4px; }
 
 /* "Open on another device": a popover under the top band, opened by pressing the logo */
-.open-here { position: fixed; z-index: 25; top: calc(var(--band-h, 72px) + 8px); left: 50%; transform: translateX(-50%);
+.open-here { position: fixed; z-index: 41; top: calc(var(--band-h, 72px) + 8px); left: 50%; transform: translateX(-50%);
   width: min(320px, calc(100% - 24px)); margin: 0; text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); max-height: calc(100dvh - var(--band-h, 72px) - 24px); overflow: auto; }
 .open-here-qr { display: inline-block; background: #fff; border-radius: 10px; line-height: 0; }
 #app-qr { display: block; width: 200px; height: 200px; max-width: 100%; }
 .open-here-text h2 { margin: 12px 0 4px; }
 .open-here-text p { margin: 0; }
 
+#scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .25); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
 /* Send view: the file card takes the space that is left and the preview shrinks to fit,
    so Start sending is always visible, even on small screens. */
-#view-send { display: flex; flex-direction: column; height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
+#view-send { height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
 #view-send .file-card { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #view-send .start-card { flex: none; margin-bottom: 0; }
+#view-send .refresh-zone { margin-top: 0; }
 #view-send .file-card .file-pick { flex: none; }
 #preview-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 #preview-wrap #preview { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; max-height: none; object-fit: contain; }
@@ -309,6 +314,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
     </form>
   </dialog>
 
+  <div id="scrim" hidden></div>
   <!-- Shown when the logo is pressed; works on any device with a camera -->
     <section id="open-here" class="card open-here" hidden>
       <div class="open-here-qr">
@@ -340,7 +346,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
     <section class="card start-card">
       <button id="btn-start" class="primary" disabled>Start sending</button>
     </section>
-
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <!-- Fullscreen player -->
@@ -369,13 +375,13 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
       </div>
       <div class="recv-big">
         <div><span id="recv-pct">0 %</span><small>transferred</small></div>
-        <div><span id="recv-speed">0.000</span><small>MB/s</small></div>
+        <div><span id="recv-speed">0.0</span><small>kB/s</small></div>
         <div><span id="recv-time">0:00.0</span><small id="recv-time-label">transfer time</small></div>
       </div>
       <div class="progress"><div id="progress-bar"></div></div>
-      <p id="recv-phase" class="recv-phase">Camera is off. Press "Start camera".</p>
-      <p class="legend"><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
-      <p id="recv-status" class="mono muted">No codes yet</p>
+      <p id="recv-phase" class="recv-phase" hidden>Camera is off. Press "Start camera".</p>
+      <p class="legend" hidden><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
+      <p id="recv-status" class="mono muted" hidden>No codes yet</p>
     </section>
 
     <section class="card" id="result" hidden>
@@ -387,6 +393,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
         <a id="btn-download" class="button" download>Download</a>
       </div>
     </section>
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <!-- Decoder worker (decoder-worker.js + vendor/zxing-reader.js) and its WebAssembly binary (vendor/zxing_reader.wasm, base64).
@@ -2995,34 +3002,42 @@ $('btn-settings').onclick = () => {
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-// ---------------------------------------------------------------- refresh: tap the logo four times
+// ---------------------------------------------------------------- logo: "open on another device"
 const logo = document.querySelector('.logo');
-let logoTaps = [];
-logo.addEventListener('click', () => {
-  const now = Date.now();
-  logoTaps = logoTaps.filter((t) => now - t < 2000);
-  logoTaps.push(now);
-  if (logoTaps.length < 4) { $('open-here').hidden = !$('open-here').hidden; return; }
-  $('open-here').hidden = true;
-  logoTaps = [];
-  const splash = document.createElement('div');
-  splash.id = 'splash';
-  splash.setAttribute('role', 'status');
-  const img = document.createElement('img');
-  img.src = logo.src;
-  img.alt = 'QR XFER';
-  const msg = document.createElement('p');
-  msg.textContent = 'Refreshing …';
-  splash.append(img, msg);
-  document.body.append(splash);
-  setTimeout(() => location.reload(), 900);
-});
-
-// Tapping anywhere else, or pressing Escape, closes the "open on another device" popover.
+// The popover shows the app's QR code; the rest of the screen is blurred behind it.
+function setShare(open) {
+  $('open-here').hidden = !open;
+  $('scrim').hidden = !open;
+}
+logo.addEventListener('click', () => setShare($('open-here').hidden));
+// Tapping anywhere else (the blurred background included), or pressing Escape, closes it.
 document.addEventListener('click', (e) => {
-  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) $('open-here').hidden = true;
+  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) setShare(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('open-here').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setShare(false); });
+
+// ---------------------------------------------------------------- refresh: tap the empty area at the bottom four times
+let zoneTaps = [];
+for (const zone of document.querySelectorAll('.refresh-zone')) {
+  zone.addEventListener('click', () => {
+    const now = Date.now();
+    zoneTaps = zoneTaps.filter((t) => now - t < 2000);
+    zoneTaps.push(now);
+    if (zoneTaps.length < 4) return;
+    zoneTaps = [];
+    const splash = document.createElement('div');
+    splash.id = 'splash';
+    splash.setAttribute('role', 'status');
+    const img = document.createElement('img');
+    img.src = logo.src;
+    img.alt = 'QR XFER';
+    const msg = document.createElement('p');
+    msg.textContent = 'Refreshing …';
+    splash.append(img, msg);
+    document.body.append(splash);
+    setTimeout(() => location.reload(), 900);
+  });
+}
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
@@ -3492,15 +3507,15 @@ const fmtClock = (ms) => {
   const t = Math.max(0, ms) / 1000, m = Math.floor(t / 60), sec = t - m * 60;
   return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
 };
-const fmtMBs = (bps) => (bps / 1048576).toFixed(3);
+const fmtKBs = (bps) => (bps / 1024).toFixed(1);
 function updateProgressText() {
   const pct = dec.K ? (100 * dec.decoded) / dec.K : 0;
   $('recv-pct').textContent = `${pct < 100 && pct > 99 ? 99 : Math.floor(pct)} %`;
   const ms = tStart ? (tEnd || performance.now()) - tStart : 0;
   $('recv-time').textContent = fmtClock(ms);
-  // Speed: received file data (bytes) per second, in MB/s
+  // Speed: received file data (bytes) per second, in kB/s
   const bytes = dec.K ? Math.min(dec.streamLen, dec.decoded * dec.B) : 0;
-  $('recv-speed').textContent = fmtMBs(ms > 0 ? bytes / (ms / 1000) : 0);
+  $('recv-speed').textContent = fmtKBs(ms > 0 ? bytes / (ms / 1000) : 0);
   $('recv-time-label').textContent = tEnd ? 'transfer time (done)' : 'transfer time';
 }
 setInterval(() => { updateProgressText(); updatePhase(); }, 100);
@@ -3650,7 +3665,7 @@ function finish() {
   $('btn-download').download = resultName;
   $('result-info').textContent =
     `${resultName} · ${fmtBytes(file.length)} · ${dec.K} data codes: ${direct.size} read directly, ${dec.K - direct.size} recovered with parity · ` +
-    `transferred in ${fmtClock(tEnd - tStart)} (${fmtMBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} MB/s) · ` +
+    `transferred in ${fmtClock(tEnd - tStart)} (${fmtKBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} kB/s) · ` +
     (ok ? 'checksum OK ✔' : 'CHECKSUM FAILED – the file may be damaged');
   $('result').hidden = false;
   setStatus(`${direct.size} codes read directly (green) · ${dec.K - direct.size} recovered with parity (yellow) · ${dupSeen} duplicate codes re-read`);

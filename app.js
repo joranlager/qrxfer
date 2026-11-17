@@ -32,34 +32,42 @@ $('btn-settings').onclick = () => {
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-// ---------------------------------------------------------------- refresh: tap the logo four times
+// ---------------------------------------------------------------- logo: "open on another device"
 const logo = document.querySelector('.logo');
-let logoTaps = [];
-logo.addEventListener('click', () => {
-  const now = Date.now();
-  logoTaps = logoTaps.filter((t) => now - t < 2000);
-  logoTaps.push(now);
-  if (logoTaps.length < 4) { $('open-here').hidden = !$('open-here').hidden; return; }
-  $('open-here').hidden = true;
-  logoTaps = [];
-  const splash = document.createElement('div');
-  splash.id = 'splash';
-  splash.setAttribute('role', 'status');
-  const img = document.createElement('img');
-  img.src = logo.src;
-  img.alt = 'QR XFER';
-  const msg = document.createElement('p');
-  msg.textContent = 'Refreshing …';
-  splash.append(img, msg);
-  document.body.append(splash);
-  setTimeout(() => location.reload(), 900);
-});
-
-// Tapping anywhere else, or pressing Escape, closes the "open on another device" popover.
+// The popover shows the app's QR code; the rest of the screen is blurred behind it.
+function setShare(open) {
+  $('open-here').hidden = !open;
+  $('scrim').hidden = !open;
+}
+logo.addEventListener('click', () => setShare($('open-here').hidden));
+// Tapping anywhere else (the blurred background included), or pressing Escape, closes it.
 document.addEventListener('click', (e) => {
-  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) $('open-here').hidden = true;
+  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) setShare(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('open-here').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setShare(false); });
+
+// ---------------------------------------------------------------- refresh: tap the empty area at the bottom four times
+let zoneTaps = [];
+for (const zone of document.querySelectorAll('.refresh-zone')) {
+  zone.addEventListener('click', () => {
+    const now = Date.now();
+    zoneTaps = zoneTaps.filter((t) => now - t < 2000);
+    zoneTaps.push(now);
+    if (zoneTaps.length < 4) return;
+    zoneTaps = [];
+    const splash = document.createElement('div');
+    splash.id = 'splash';
+    splash.setAttribute('role', 'status');
+    const img = document.createElement('img');
+    img.src = logo.src;
+    img.alt = 'QR XFER';
+    const msg = document.createElement('p');
+    msg.textContent = 'Refreshing …';
+    splash.append(img, msg);
+    document.body.append(splash);
+    setTimeout(() => location.reload(), 900);
+  });
+}
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
@@ -529,15 +537,15 @@ const fmtClock = (ms) => {
   const t = Math.max(0, ms) / 1000, m = Math.floor(t / 60), sec = t - m * 60;
   return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
 };
-const fmtMBs = (bps) => (bps / 1048576).toFixed(3);
+const fmtKBs = (bps) => (bps / 1024).toFixed(1);
 function updateProgressText() {
   const pct = dec.K ? (100 * dec.decoded) / dec.K : 0;
   $('recv-pct').textContent = `${pct < 100 && pct > 99 ? 99 : Math.floor(pct)} %`;
   const ms = tStart ? (tEnd || performance.now()) - tStart : 0;
   $('recv-time').textContent = fmtClock(ms);
-  // Speed: received file data (bytes) per second, in MB/s
+  // Speed: received file data (bytes) per second, in kB/s
   const bytes = dec.K ? Math.min(dec.streamLen, dec.decoded * dec.B) : 0;
-  $('recv-speed').textContent = fmtMBs(ms > 0 ? bytes / (ms / 1000) : 0);
+  $('recv-speed').textContent = fmtKBs(ms > 0 ? bytes / (ms / 1000) : 0);
   $('recv-time-label').textContent = tEnd ? 'transfer time (done)' : 'transfer time';
 }
 setInterval(() => { updateProgressText(); updatePhase(); }, 100);
@@ -687,7 +695,7 @@ function finish() {
   $('btn-download').download = resultName;
   $('result-info').textContent =
     `${resultName} · ${fmtBytes(file.length)} · ${dec.K} data codes: ${direct.size} read directly, ${dec.K - direct.size} recovered with parity · ` +
-    `transferred in ${fmtClock(tEnd - tStart)} (${fmtMBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} MB/s) · ` +
+    `transferred in ${fmtClock(tEnd - tStart)} (${fmtKBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} kB/s) · ` +
     (ok ? 'checksum OK ✔' : 'CHECKSUM FAILED – the file may be damaged');
   $('result').hidden = false;
   setStatus(`${direct.size} codes read directly (green) · ${dec.K - direct.size} recovered with parity (yellow) · ${dupSeen} duplicate codes re-read`);

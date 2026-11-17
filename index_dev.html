@@ -123,6 +123,7 @@
     </form>
   </dialog>
 
+  <div id="scrim" hidden></div>
   <!-- Shown when the logo is pressed; works on any device with a camera -->
     <section id="open-here" class="card open-here" hidden>
       <div class="open-here-qr">
@@ -154,7 +155,7 @@
     <section class="card start-card">
       <button id="btn-start" class="primary" disabled>Start sending</button>
     </section>
-
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <!-- Fullscreen player -->
@@ -183,13 +184,13 @@
       </div>
       <div class="recv-big">
         <div><span id="recv-pct">0 %</span><small>transferred</small></div>
-        <div><span id="recv-speed">0.000</span><small>MB/s</small></div>
+        <div><span id="recv-speed">0.0</span><small>kB/s</small></div>
         <div><span id="recv-time">0:00.0</span><small id="recv-time-label">transfer time</small></div>
       </div>
       <div class="progress"><div id="progress-bar"></div></div>
-      <p id="recv-phase" class="recv-phase">Camera is off. Press "Start camera".</p>
-      <p class="legend"><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
-      <p id="recv-status" class="mono muted">No codes yet</p>
+      <p id="recv-phase" class="recv-phase" hidden>Camera is off. Press "Start camera".</p>
+      <p class="legend" hidden><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
+      <p id="recv-status" class="mono muted" hidden>No codes yet</p>
     </section>
 
     <section class="card" id="result" hidden>
@@ -201,6 +202,7 @@
         <a id="btn-download" class="button" download>Download</a>
       </div>
     </section>
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <script type="module" src="app.js"></script>
