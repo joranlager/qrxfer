@@ -24,31 +24,55 @@ $('tab-recv').onclick = () => showTab('recv');
 
 // ---------------------------------------------------------------- settings dialog
 const settingsDlg = $('settings');
-$('btn-settings').onclick = () => settingsDlg.showModal();
+$('btn-settings').onclick = () => {
+  settingsDlg.showModal();
+  // Opening must not focus (and so highlight or open) the first control, the Format picker.
+  if (settingsDlg.contains(document.activeElement)) document.activeElement.blur();
+};
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-// ---------------------------------------------------------------- refresh: tap the logo four times
+// ---------------------------------------------------------------- splash
+// The splash in the page is shown while the app opens. A copy is kept for the refresh.
+const startSplash = $('splash');
+if (document.documentElement.classList.contains('no-splash')) startSplash.remove();
+const splashTemplate = startSplash.cloneNode(true);
+setTimeout(() => {
+  startSplash.classList.add('hide');
+  setTimeout(() => startSplash.remove(), 300);
+}, 1200);
+
+// ---------------------------------------------------------------- logo: "open on another device"
 const logo = document.querySelector('.logo');
-let logoTaps = [];
-logo.addEventListener('click', () => {
-  const now = Date.now();
-  logoTaps = logoTaps.filter((t) => now - t < 2000);
-  logoTaps.push(now);
-  if (logoTaps.length < 4) return;
-  logoTaps = [];
-  const splash = document.createElement('div');
-  splash.id = 'splash';
-  splash.setAttribute('role', 'status');
-  const img = document.createElement('img');
-  img.src = logo.src;
-  img.alt = 'QR XFER';
-  const msg = document.createElement('p');
-  msg.textContent = 'Refreshing …';
-  splash.append(img, msg);
-  document.body.append(splash);
-  setTimeout(() => location.reload(), 900);
+// The popover shows the app's QR code; the rest of the screen is blurred behind it.
+function setShare(open) {
+  $('open-here').hidden = !open;
+  $('scrim').hidden = !open;
+}
+logo.addEventListener('click', () => setShare($('open-here').hidden));
+// Tapping anywhere else (the blurred background included), or pressing Escape, closes it.
+document.addEventListener('click', (e) => {
+  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) setShare(false);
 });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setShare(false); });
+
+// ---------------------------------------------------------------- refresh: tap the empty area at the bottom four times
+let zoneTaps = [];
+for (const zone of document.querySelectorAll('.refresh-zone')) {
+  zone.addEventListener('click', () => {
+    const now = Date.now();
+    zoneTaps = zoneTaps.filter((t) => now - t < 2000);
+    zoneTaps.push(now);
+    if (zoneTaps.length < 4) return;
+    zoneTaps = [];
+    const splash = splashTemplate.cloneNode(true);
+    splash.classList.remove('hide');
+    splash.classList.add('refreshing');   // stays visible even on a page that was itself reloaded
+    splash.querySelector('.splash-msg').hidden = false;
+    document.body.append(splash);
+    setTimeout(() => location.reload(), 900);
+  });
+}
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
@@ -97,6 +121,30 @@ function saveSettings() {
   } catch {}
 }
 
+function setPreviewOpen(open) {
+  $('preview').hidden = !open;
+  $('btn-preview-toggle').setAttribute('aria-expanded', String(open));
+  $('btn-preview-toggle').classList.toggle('on', open);
+}
+$('btn-preview-toggle').onclick = () => setPreviewOpen($('preview').hidden);
+
+// Remove the selected file again: back to the empty "choose a file" state.
+$('btn-remove').onclick = () => {
+  prepareToken++;                       // cancel a preparation that is still running
+  sourceFile = null; payloadBytes = null; payloadType = ''; payloadName = '';
+  const prev = $('preview');
+  if (prev.dataset.url) URL.revokeObjectURL(prev.dataset.url);
+  prev.removeAttribute('src'); delete prev.dataset.url;
+  setPreviewOpen(false);
+  $('file').value = '';
+  $('file-label').textContent = 'Choose a file, or drop one here';
+  $('file-info').textContent = '';
+  $('preview-wrap').hidden = true;
+  dropZone.classList.remove('has-file');
+  $('btn-start').disabled = true;
+  showImageOptions(true);
+};
+
 function setSourceFile(file) {
   sourceFile = file || null;
   if (sourceFile) $('file-label').textContent = sourceFile.name;
@@ -134,7 +182,7 @@ dropZone.addEventListener('drop', (e) => {
 });
 // A file dropped outside the card must not make the browser open it and leave the app.
 for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
-for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); prepare(); });
+for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); updateCompressOptions(); prepare(); });
 for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('input', () => { saveSettings(); updateEstimate(); });
 opt.quality.addEventListener('input', () => ($('out-quality').textContent = opt.quality.value));
 
@@ -163,12 +211,16 @@ const isImageFile = (f) => (f.type || '').startsWith('image/');
 function showImageOptions(on) {
   for (const el of document.querySelectorAll('[data-image-only]')) el.hidden = !on;
 }
+// Size and quality only matter when the image is re-encoded, not when the original file is kept.
+function updateCompressOptions() {
+  for (const el of document.querySelectorAll('[data-compress-only]')) el.hidden = opt.format.value === 'original';
+  $('format-heading').textContent = opt.format.selectedOptions[0]?.textContent || '';
+}
 
 async function prepare() {
   const token = ++prepareToken;
   $('btn-start').disabled = true;
   if (!sourceFile) return;
-  $('estimate').textContent = 'Preparing file …';
   let asImage = isImageFile(sourceFile);
   showImageOptions(asImage);
   const format = opt.format.value;
@@ -205,32 +257,26 @@ async function prepare() {
   const sizeInfo = `${fmtBytes(bytes.length)}` + (bytes.length !== sourceFile.size ? ` (original ${fmtBytes(sourceFile.size)})` : '');
   const plainInfo = [name, asImage ? '' : (type || 'unknown type'), sizeInfo].filter(Boolean).join(' · ');
   $('file-info').textContent = plainInfo;
-  prev.hidden = !asImage;
+  // The preview starts collapsed for every new file; the Preview button expands it.
+  setPreviewOpen(false);
+  $('btn-preview-toggle').hidden = !asImage;
   if (asImage) {
     prev.onload = () => {
       $('file-info').textContent = `${name} · ${prev.naturalWidth}×${prev.naturalHeight} · ${sizeInfo}`;
     };
-    prev.onerror = () => { prev.hidden = true; };   // an image type the browser cannot display
+    prev.onerror = () => { setPreviewOpen(false); $('btn-preview-toggle').hidden = true; };   // an image type the browser cannot display
     prev.src = blobUrl; prev.dataset.url = blobUrl;
   } else {
     prev.removeAttribute('src'); prev.dataset.url = blobUrl;
   }
   $('preview-wrap').hidden = false;
+  dropZone.classList.add('has-file');
   updateEstimate();
 }
 
+// Enables Start once a payload is ready.
 function updateEstimate() {
-  if (!payloadBytes) return;
-  const chunk = Math.max(50, +opt.chunk.value || 380);
-  const per = Math.max(1, +opt.perPacket.value || 10);
-  const interval = Math.max(30, +opt.interval.value || 300);
-  const metaLen = new TextEncoder().encode(JSON.stringify({ name: payloadName, type: payloadType, size: payloadBytes.length, crc: 4294967295 })).length;
-  const K = Math.ceil((2 + metaLen + payloadBytes.length) / chunk);
-  const t = (share) => fmtTime((K / share / per) * (interval / 1000));
-  $('estimate').textContent =
-    `${K} data codes first, then parity codes only (${per} per packet, ${fmtBytes(Math.round((per * chunk) / (interval / 1000)))}/s). ` +
-    `Data codes take ${t(1)}. The receiver is done after about ${t(1)} if it reads everything, ${t(0.8)} with 20 % loss, ${t(0.5)} with 50 % loss.`;
-  $('btn-start').disabled = false;
+  if (payloadBytes) $('btn-start').disabled = false;
 }
 
 // ---------------------------------------------------------------- player
@@ -286,10 +332,6 @@ function drawCountdown() {
   pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
   pctx.font = `700 ${Math.round(Math.min(W, H) * 0.45)}px -apple-system, "Segoe UI", sans-serif`;
   pctx.fillText(String(Math.ceil(left / 1000)), W / 2, H / 2);
-  pctx.font = `${Math.round(18 * dpr)}px -apple-system, "Segoe UI", sans-serif`;
-  pctx.fillStyle = '#5d6673';
-  pctx.fillText('Sending starts – aim the receiving camera at this screen', W / 2, H / 2 + Math.min(W, H) * 0.32);
-  $('player-status').textContent = `Starting in ${Math.ceil(left / 1000)} s · ${enc.K} data codes`;
 }
 function countdownTick() {
   if (!playing || paused) return;
@@ -316,9 +358,6 @@ function drawPacket() {
     const y = Math.round(offY + Math.floor(k / g.cols) * g.cell + (g.cell - size) / 2);
     pctx.drawImage(q, x, y, size, size);
   });
-  const n = enc.count, K = enc.K;
-  $('player-status').textContent = (n <= K ? `Data ${n}/${K}` : `Data done (${K}) · parity ${n - K}`) +
-    ` · ${interval} ms · ${perPacket} per packet`;
 }
 
 // Each packet is the next codes from the encoder: first all data codes, then endless parity codes.
@@ -340,7 +379,8 @@ function startPlayer() {
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
   if (enc.K > 0xffff) { alert('Too many codes – increase bytes per QR code or send a smaller file.'); return; }
   current = []; paused = false; playing = true;
-  $('btn-pause').textContent = 'Pause';
+  $('pause-overlay').hidden = true;
+  showInterval();
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
@@ -353,6 +393,7 @@ function startPlayer() {
 
 function stopPlayer() {
   playing = false;
+  $('pause-overlay').hidden = true;
   clearTimeout(timer);
   $('player').hidden = true;
   keepAwake(false);
@@ -360,20 +401,42 @@ function stopPlayer() {
 }
 
 $('btn-start').onclick = startPlayer;
-$('btn-stop').onclick = stopPlayer;
-$('btn-pause').onclick = () => {
-  paused = !paused;
-  $('btn-pause').textContent = paused ? 'Resume' : 'Pause';
-  if (countdownEnd) {
-    // Pausing during the countdown freezes the number. Resume counts on from there.
-    if (paused) countdownLeft = Math.max(0, countdownEnd - performance.now());
-    else { countdownEnd = performance.now() + countdownLeft; clearTimeout(timer); countdownTick(); }
-    return;
+// Stop asks for confirmation; sending carries on behind the dialog until it is acknowledged.
+const stopDlg = $('confirm-stop');
+$('btn-stop').onclick = () => stopDlg.showModal();
+stopDlg.addEventListener('close', () => { if (stopDlg.returnValue === 'stop') stopPlayer(); stopDlg.returnValue = ''; });
+
+// Pause only exists during the countdown: tap the screen to pause (the screen blurs and a pause symbol
+// appears), tap again to resume.
+function togglePause() {
+  if (!playing || !countdownEnd) return;
+  clearTimeout(timer);
+  if (!paused) {
+    paused = true;
+    countdownLeft = Math.max(0, countdownEnd - performance.now());
+    drawCountdown();
+  } else {
+    paused = false;
+    countdownEnd = performance.now() + countdownLeft;
+    countdownTick();
   }
-  if (!paused) { clearTimeout(timer); tick(); }
-};
-$('btn-slower').onclick = () => { interval = Math.min(5000, Math.round(interval * 1.25)); drawPacket(); };
-$('btn-faster').onclick = () => { interval = Math.max(30, Math.round(interval / 1.25)); drawPacket(); };
+  // Centre the symbol on the countdown, which is drawn above the control bar.
+  $('pause-overlay').style.paddingBottom = `${$('player-bar').offsetHeight}px`;
+  $('pause-overlay').hidden = !paused;
+}
+pc.addEventListener('click', togglePause);
+$('pause-overlay').addEventListener('click', togglePause);
+
+// Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
+function showInterval() { $('wait-val').textContent = `${interval} ms`; }
+function stepInterval(f) {
+  const next = Math.min(5000, Math.max(30, Math.round((interval * f) / 10) * 10));
+  interval = next !== interval ? next : Math.min(5000, Math.max(30, interval + (f > 1 ? 10 : -10)));
+  showInterval();
+  drawPacket();
+}
+$('btn-slower').onclick = () => stepInterval(1.25);
+$('btn-faster').onclick = () => stepInterval(0.8);
 // The top band stays visible while sending. The player starts right below it (CSS var --band-h),
 // so QR codes never end up under the band or the phone's notch. Re-measure whenever the band's
 // height changes, e.g. when the phone is rotated, and redraw so every QR code stays a square.
@@ -487,15 +550,15 @@ const fmtClock = (ms) => {
   const t = Math.max(0, ms) / 1000, m = Math.floor(t / 60), sec = t - m * 60;
   return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
 };
-const fmtMBs = (bps) => (bps / 1048576).toFixed(3);
+const fmtKBs = (bps) => (bps / 1024).toFixed(1);
 function updateProgressText() {
   const pct = dec.K ? (100 * dec.decoded) / dec.K : 0;
   $('recv-pct').textContent = `${pct < 100 && pct > 99 ? 99 : Math.floor(pct)} %`;
   const ms = tStart ? (tEnd || performance.now()) - tStart : 0;
   $('recv-time').textContent = fmtClock(ms);
-  // Speed: received file data (bytes) per second, in MB/s
+  // Speed: received file data (bytes) per second, in kB/s
   const bytes = dec.K ? Math.min(dec.streamLen, dec.decoded * dec.B) : 0;
-  $('recv-speed').textContent = fmtMBs(ms > 0 ? bytes / (ms / 1000) : 0);
+  $('recv-speed').textContent = fmtKBs(ms > 0 ? bytes / (ms / 1000) : 0);
   $('recv-time-label').textContent = tEnd ? 'transfer time (done)' : 'transfer time';
 }
 setInterval(() => { updateProgressText(); updatePhase(); }, 100);
@@ -645,7 +708,7 @@ function finish() {
   $('btn-download').download = resultName;
   $('result-info').textContent =
     `${resultName} · ${fmtBytes(file.length)} · ${dec.K} data codes: ${direct.size} read directly, ${dec.K - direct.size} recovered with parity · ` +
-    `transferred in ${fmtClock(tEnd - tStart)} (${fmtMBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} MB/s) · ` +
+    `transferred in ${fmtClock(tEnd - tStart)} (${fmtKBs(file.length / Math.max(0.001, (tEnd - tStart) / 1000))} kB/s) · ` +
     (ok ? 'checksum OK ✔' : 'CHECKSUM FAILED – the file may be damaged');
   $('result').hidden = false;
   setStatus(`${direct.size} codes read directly (green) · ${dec.K - direct.size} recovered with parity (yellow) · ${dupSeen} duplicate codes re-read`);
@@ -667,6 +730,7 @@ window.addEventListener('resize', drawChunkMap);
 
 // ---------------------------------------------------------------- init
 loadSettings();
+updateCompressOptions();
 let startTab = 'send';
 try { startTab = new URLSearchParams(location.search).get('mode') || localStorage.getItem('qrsend6-tab') || 'send'; } catch {}
 showTab(startTab === 'recv' ? 'recv' : 'send');

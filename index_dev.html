@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -38,6 +38,22 @@
   <link rel="worker-wasm" href="vendor/zxing_reader.wasm">
 </head>
 <body>
+  <!-- A reload (the four-tap refresh or the browser's own) skips the opening splash. Runs before the first paint. -->
+  <script>
+    try { if (performance.getEntriesByType('navigation')[0].type === 'reload') document.documentElement.classList.add('no-splash'); } catch (e) {}
+  </script>
+  <!-- Splash shown while the app opens (app.js removes it again) and while refreshing -->
+  <div id="splash" role="status" aria-label="QR XFER by JL">
+    <div class="splash-mark">
+      <div class="splash-title">QR XFER</div>
+      <div class="splash-track" aria-hidden="true"></div>
+      <div class="splash-ring" aria-hidden="true"></div>
+      <img src="logo.webp" width="744" height="424" alt="">
+      <div class="splash-by">by JL</div>
+      <p class="splash-msg" hidden>Refreshing …</p>
+    </div>
+  </div>
+
   <header class="top">
     <div class="brand">
       <img src="logo.webp" width="744" height="424" alt="QR XFER logo" class="logo">
@@ -55,102 +71,143 @@
   </header>
 
   <!-- ===================== SETTINGS ===================== -->
-  <dialog id="settings" aria-labelledby="settings-title">
+  <dialog id="settings" aria-labelledby="settings-title" autofocus>
     <form method="dialog">
-      <div class="dlg-head">
-        <h2 id="settings-title">Settings</h2>
-        <button class="primary" value="close">Done</button>
+      <h2 id="settings-title">Settings</h2>
+      <div class="dlg-body">
+        <div data-image-only>
+          <h3>File format</h3>
+          <div class="group">
+            <label><span>Format</span>
+              <select id="opt-format">
+                <option value="image/jpeg" selected>JPEG</option>
+                <option value="image/webp">WebP</option>
+                <option value="original">Keep original</option>
+              </select>
+            </label>
+          </div>
+          <!-- Settings specific to the chosen format; hidden when the original file is kept -->
+          <div data-compress-only>
+            <h3 id="format-heading">JPEG</h3>
+            <div class="group">
+              <label><span>Max size (px)</span>
+                <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64" inputmode="numeric">
+              </label>
+              <label class="slider"><span>Quality</span><output id="out-quality">0.75</output>
+                <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <h3>Transmission</h3>
+        <div class="group">
+          <label><span>Codes per packet</span>
+            <input type="number" id="opt-perpacket" value="10" min="1" max="30" inputmode="numeric">
+          </label>
+          <label><span>Bytes per code</span>
+            <input type="number" id="opt-chunk" value="380" min="100" max="1800" step="10" inputmode="numeric">
+          </label>
+          <label><span>Packet time (ms)</span>
+            <input type="number" id="opt-interval" value="300" min="60" max="5000" step="20" inputmode="numeric">
+          </label>
+          <label><span>Countdown (s)</span>
+            <input type="number" id="opt-countdown" value="5" min="0" max="120" step="1" inputmode="numeric">
+          </label>
+          <label><span>Error correction</span>
+            <select id="opt-ecc">
+              <option value="L">L · More data</option>
+              <option value="M" selected>M · Balanced</option>
+              <option value="Q">Q · Robust</option>
+            </select>
+          </label>
+        </div>
+
+        <h3>Camera</h3>
+        <div class="group">
+          <label><span>Resolution</span>
+            <select id="opt-res">
+              <option value="1280x720">720p</option>
+              <option value="1920x1080" selected>1080p</option>
+              <option value="2560x1440">1440p</option>
+              <option value="3840x2160">4K</option>
+            </select>
+          </label>
+        </div>
       </div>
-      <h3>Send</h3>
-      <div class="grid">
-        <label data-image-only>Image format
-          <select id="opt-format">
-            <option value="image/jpeg">JPEG (compressed)</option>
-            <option value="image/webp">WebP (compressed)</option>
-            <option value="original">Original file (no changes)</option>
-          </select>
-        </label>
-        <label data-image-only>Max width/height (px)
-          <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64">
-        </label>
-        <label data-image-only>Quality <output id="out-quality">0.75</output>
-          <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
-        </label>
-        <label>QR codes per packet
-          <input type="number" id="opt-perpacket" value="10" min="1" max="30">
-        </label>
-        <label>Bytes per QR code
-          <input type="number" id="opt-chunk" value="380" min="100" max="1800" step="10">
-        </label>
-        <label>Time per packet (ms)
-          <input type="number" id="opt-interval" value="300" min="60" max="5000" step="20">
-        </label>
-        <label>Countdown before start (s)
-          <input type="number" id="opt-countdown" value="5" min="0" max="120" step="1">
-        </label>
-        <label>Error correction
-          <select id="opt-ecc">
-            <option value="L">L (most data)</option>
-            <option value="M" selected>M (recommended)</option>
-            <option value="Q">Q (robust)</option>
-          </select>
-        </label>
-      </div>
-      <h3>Receive</h3>
-      <div class="grid">
-        <label>Camera resolution
-          <select id="opt-res">
-            <option value="1280x720">720p</option>
-            <option value="1920x1080" selected>1080p</option>
-            <option value="2560x1440">1440p</option>
-            <option value="3840x2160">4K</option>
-          </select>
-        </label>
-      </div>
+      <div class="dlg-foot"><button class="primary" value="close">Done</button></div>
     </form>
   </dialog>
 
-  <!-- ===================== SEND ===================== -->
-  <main id="view-send" class="view">
-    <section class="card open-here">
+  <div id="scrim" hidden></div>
+  <!-- Shown when the logo is pressed; works on any device with a camera -->
+    <section id="open-here" class="card open-here" hidden>
       <div class="open-here-qr">
         <svg id="app-qr" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" width="200" height="200" role="img" aria-label="QR code that opens https://joranlager.github.io/qrxfer/" shape-rendering="crispEdges"><rect width="37" height="37" fill="#fff"/><path fill="#000" d="M4 4h7v1h-7zM13 4h1v1h-1zM15 4h4v1h-4zM20 4h4v1h-4zM26 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM13 5h1v1h-1zM16 5h4v1h-4zM21 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM14 6h1v1h-1zM17 6h1v1h-1zM19 6h1v1h-1zM21 6h2v1h-2zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h3v1h-3zM32 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM14 7h1v1h-1zM17 7h2v1h-2zM22 7h3v1h-3zM26 7h1v1h-1zM28 7h3v1h-3zM32 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM16 8h4v1h-4zM26 8h1v1h-1zM28 8h3v1h-3zM32 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h2v1h-2zM17 9h3v1h-3zM22 9h2v1h-2zM26 9h1v1h-1zM32 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h7v1h-7zM13 11h1v1h-1zM15 11h2v1h-2zM18 11h1v1h-1zM20 11h3v1h-3zM4 12h1v1h-1zM7 12h1v1h-1zM9 12h2v1h-2zM12 12h5v1h-5zM23 12h1v1h-1zM25 12h1v1h-1zM27 12h1v1h-1zM6 13h3v1h-3zM11 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM20 13h2v1h-2zM24 13h3v1h-3zM29 13h1v1h-1zM32 13h1v1h-1zM4 14h1v1h-1zM6 14h2v1h-2zM10 14h2v1h-2zM14 14h2v1h-2zM20 14h4v1h-4zM25 14h7v1h-7zM6 15h2v1h-2zM9 15h1v1h-1zM11 15h4v1h-4zM18 15h3v1h-3zM25 15h2v1h-2zM30 15h2v1h-2zM4 16h7v1h-7zM14 16h3v1h-3zM20 16h3v1h-3zM24 16h3v1h-3zM29 16h1v1h-1zM31 16h2v1h-2zM4 17h1v1h-1zM6 17h3v1h-3zM12 17h3v1h-3zM16 17h1v1h-1zM23 17h3v1h-3zM4 18h1v1h-1zM8 18h3v1h-3zM12 18h2v1h-2zM15 18h1v1h-1zM20 18h1v1h-1zM25 18h1v1h-1zM27 18h1v1h-1zM29 18h4v1h-4zM5 19h1v1h-1zM11 19h2v1h-2zM15 19h4v1h-4zM20 19h2v1h-2zM24 19h2v1h-2zM27 19h1v1h-1zM29 19h1v1h-1zM31 19h1v1h-1zM4 20h1v1h-1zM9 20h3v1h-3zM17 20h2v1h-2zM21 20h1v1h-1zM24 20h2v1h-2zM27 20h1v1h-1zM31 20h1v1h-1zM5 21h1v1h-1zM7 21h1v1h-1zM9 21h1v1h-1zM14 21h2v1h-2zM20 21h2v1h-2zM24 21h4v1h-4zM29 21h1v1h-1zM32 21h1v1h-1zM4 22h1v1h-1zM6 22h1v1h-1zM10 22h1v1h-1zM14 22h4v1h-4zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM26 22h2v1h-2zM31 22h2v1h-2zM7 23h1v1h-1zM9 23h1v1h-1zM11 23h1v1h-1zM14 23h2v1h-2zM17 23h1v1h-1zM19 23h5v1h-5zM26 23h1v1h-1zM28 23h1v1h-1zM31 23h2v1h-2zM4 24h1v1h-1zM6 24h2v1h-2zM10 24h1v1h-1zM12 24h1v1h-1zM14 24h3v1h-3zM18 24h2v1h-2zM24 24h5v1h-5zM30 24h1v1h-1zM12 25h3v1h-3zM17 25h1v1h-1zM20 25h1v1h-1zM24 25h1v1h-1zM28 25h1v1h-1zM30 25h3v1h-3zM4 26h7v1h-7zM13 26h1v1h-1zM17 26h2v1h-2zM21 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h1v1h-1zM31 26h1v1h-1zM4 27h1v1h-1zM10 27h1v1h-1zM12 27h2v1h-2zM15 27h3v1h-3zM22 27h1v1h-1zM24 27h1v1h-1zM28 27h4v1h-4zM4 28h1v1h-1zM6 28h3v1h-3zM10 28h1v1h-1zM13 28h2v1h-2zM18 28h1v1h-1zM21 28h2v1h-2zM24 28h5v1h-5zM31 28h2v1h-2zM4 29h1v1h-1zM6 29h3v1h-3zM10 29h1v1h-1zM12 29h1v1h-1zM14 29h1v1h-1zM18 29h1v1h-1zM23 29h1v1h-1zM26 29h6v1h-6zM4 30h1v1h-1zM6 30h3v1h-3zM10 30h1v1h-1zM16 30h3v1h-3zM23 30h1v1h-1zM28 30h3v1h-3zM32 30h1v1h-1zM4 31h1v1h-1zM10 31h1v1h-1zM13 31h1v1h-1zM15 31h1v1h-1zM17 31h3v1h-3zM21 31h4v1h-4zM27 31h2v1h-2zM31 31h1v1h-1zM4 32h7v1h-7zM12 32h1v1h-1zM17 32h1v1h-1zM20 32h2v1h-2zM24 32h3v1h-3zM29 32h1v1h-1zM31 32h1v1h-1z"/></svg>
       </div>
       <div class="open-here-text">
-        <h2>Open on another phone</h2>
-        <p class="muted">Scan the QR code with your phone's camera to open the app.</p>
+        <h2>Open on another device</h2>
+        <p class="muted">Scan the QR code with a camera to open the app.</p>
       </div>
     </section>
 
-    <section class="card">
+  <!-- ===================== SEND ===================== -->
+  <main id="view-send" class="view">
+    <section class="card file-card">
       <label class="file-pick">
         <input type="file" id="file">
         <span id="file-label">Choose a file, or drop one here</span>
       </label>
       <div id="preview-wrap" hidden>
-        <img id="preview" alt="Preview">
-        <p id="file-info" class="muted"></p>
+        <div class="file-row">
+          <p id="file-info" class="muted"></p>
+          <button type="button" id="btn-preview-toggle" aria-expanded="false" aria-controls="preview">Preview</button>
+          <button type="button" id="btn-remove" aria-label="Remove file" title="Remove file">&#x2715;</button>
+        </div>
+        <img id="preview" alt="Preview" hidden>
       </div>
     </section>
 
-    <section class="card">
-      <p id="estimate" class="muted"></p>
+    <section class="card start-card">
       <button id="btn-start" class="primary" disabled>Start sending</button>
     </section>
-
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <!-- Fullscreen player -->
   <div id="player" hidden>
     <canvas id="player-canvas"></canvas>
+    <div id="pause-overlay" hidden aria-label="Paused" role="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="3.5" width="4.5" height="17" rx="1.6"/><rect x="14" y="3.5" width="4.5" height="17" rx="1.6"/></svg>
+    </div>
     <div id="player-bar">
-      <span id="player-status"></span>
-      <button id="btn-slower" title="Slower">−</button>
-      <button id="btn-faster" title="Faster">+</button>
-      <button id="btn-pause">Pause</button>
-      <button id="btn-stop">Stop</button>
+      <div class="stepper" role="group" aria-label="Wait between packets">
+        <button id="btn-faster" class="round" aria-label="Shorter wait" title="Shorter wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+        <div class="stepper-val"><b id="wait-val">300 ms</b><small>Wait</small></div>
+        <button id="btn-slower" class="round" aria-label="Longer wait" title="Longer wait">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <button id="btn-stop" class="action stop" aria-label="Stop">
+        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="3"/></svg></span>
+        <span class="lbl">Stop</span>
+      </button>
     </div>
   </div>
+
+  <!-- Stop must be acknowledged -->
+  <dialog id="confirm-stop" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">Stop sending?</h2>
+      <p>The transfer will end. You can start again from the beginning.</p>
+      <div class="confirm-actions">
+        <button value="cancel">Keep sending</button>
+        <button value="stop" class="danger">Stop</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- ===================== RECEIVE ===================== -->
   <main id="view-recv" class="view" hidden>
@@ -166,13 +223,13 @@
       </div>
       <div class="recv-big">
         <div><span id="recv-pct">0 %</span><small>transferred</small></div>
-        <div><span id="recv-speed">0.000</span><small>MB/s</small></div>
+        <div><span id="recv-speed">0.0</span><small>kB/s</small></div>
         <div><span id="recv-time">0:00.0</span><small id="recv-time-label">transfer time</small></div>
       </div>
       <div class="progress"><div id="progress-bar"></div></div>
-      <p id="recv-phase" class="recv-phase">Camera is off. Press "Start camera".</p>
-      <p class="legend"><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
-      <p id="recv-status" class="mono muted">No codes yet</p>
+      <p id="recv-phase" class="recv-phase" hidden>Camera is off. Press "Start camera".</p>
+      <p class="legend" hidden><span class="sw ok"></span>read directly <span class="sw par"></span>recovered with parity <span class="sw par pale"></span>parity received, resolved at the end <span class="sw miss"></span>missing</p>
+      <p id="recv-status" class="mono muted" hidden>No codes yet</p>
     </section>
 
     <section class="card" id="result" hidden>
@@ -184,6 +241,7 @@
         <a id="btn-download" class="button" download>Download</a>
       </div>
     </section>
+    <div class="refresh-zone" aria-hidden="true"></div>
   </main>
 
   <script type="module" src="app.js"></script>
