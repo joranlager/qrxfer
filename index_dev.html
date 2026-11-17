@@ -66,13 +66,13 @@
               <select id="opt-format">
                 <option value="image/jpeg">JPEG</option>
                 <option value="image/webp">WebP</option>
-                <option value="original">Original</option>
+                <option value="original">Keep original</option>
               </select>
             </label>
-            <label><span>Max size (px)</span>
+            <label data-compress-only><span>Max size (px)</span>
               <input type="number" id="opt-maxside" value="1600" min="64" max="8192" step="64" inputmode="numeric">
             </label>
-            <label class="slider"><span>Quality</span><output id="out-quality">0.75</output>
+            <label class="slider" data-compress-only><span>Quality</span><output id="out-quality">0.75</output>
               <input type="range" id="opt-quality" min="0.3" max="0.95" step="0.05" value="0.75">
             </label>
           </div>

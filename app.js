@@ -134,7 +134,7 @@ dropZone.addEventListener('drop', (e) => {
 });
 // A file dropped outside the card must not make the browser open it and leave the app.
 for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
-for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); prepare(); });
+for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); updateCompressOptions(); prepare(); });
 for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('input', () => { saveSettings(); updateEstimate(); });
 opt.quality.addEventListener('input', () => ($('out-quality').textContent = opt.quality.value));
 
@@ -162,6 +162,10 @@ function canvasToBlob(canvas, type, q) {
 const isImageFile = (f) => (f.type || '').startsWith('image/');
 function showImageOptions(on) {
   for (const el of document.querySelectorAll('[data-image-only]')) el.hidden = !on;
+}
+// Size and quality only matter when the image is re-encoded, not when the original file is kept.
+function updateCompressOptions() {
+  for (const el of document.querySelectorAll('[data-compress-only]')) el.hidden = opt.format.value === 'original';
 }
 
 async function prepare() {
@@ -667,6 +671,7 @@ window.addEventListener('resize', drawChunkMap);
 
 // ---------------------------------------------------------------- init
 loadSettings();
+updateCompressOptions();
 let startTab = 'send';
 try { startTab = new URLSearchParams(location.search).get('mode') || localStorage.getItem('qrsend6-tab') || 'send'; } catch {}
 showTab(startTab === 'recv' ? 'recv' : 'send');
