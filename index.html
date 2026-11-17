@@ -148,17 +148,24 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 .sw.miss { background: var(--missing); border: 1px solid var(--border); }
 #recv-status { margin-top: 4px; }
 
-/* Startsiden: QR-kode til appens adresse */
-.open-here { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.open-here-qr { flex: none; background: #fff; border-radius: 10px; line-height: 0; }
+/* "Open on another device": a popover under the top band, opened by pressing the logo */
+.open-here { position: fixed; z-index: 25; top: calc(var(--band-h, 72px) + 8px); left: 50%; transform: translateX(-50%);
+  width: min(320px, calc(100% - 24px)); margin: 0; text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); max-height: calc(100dvh - var(--band-h, 72px) - 24px); overflow: auto; }
+.open-here-qr { display: inline-block; background: #fff; border-radius: 10px; line-height: 0; }
 #app-qr { display: block; width: 200px; height: 200px; max-width: 100%; }
-.open-here-text { flex: 1; min-width: 180px; }
-.open-here-text h2 { margin-bottom: 4px; }
-.open-here-text p { margin: 0 0 8px; }
-@media (max-width: 520px) {
-  .open-here { justify-content: center; text-align: center; }
-  .open-here-text { min-width: 0; flex-basis: 100%; }
-}
+.open-here-text h2 { margin: 12px 0 4px; }
+.open-here-text p { margin: 0; }
+
+/* Send view: the file card takes the space that is left and the preview shrinks to fit,
+   so Start sending is always visible, even on small screens. */
+#view-send { display: flex; flex-direction: column; height: calc(100dvh - var(--band-h, 72px) - env(safe-area-inset-bottom)); }
+#view-send .file-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#view-send .start-card { flex: none; margin-bottom: 0; }
+#view-send .file-card .file-pick { flex: none; }
+#preview-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+#preview-wrap #preview { flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; max-height: none; object-fit: contain; }
+#preview-wrap #file-info { flex: none; margin: 8px 0 0; }
+#view-send .file-card .file-pick span { padding: 20px 12px; }
 
 /* Settings: cog in the top band opens a sheet, styled after iOS grouped lists */
 .cog { flex: none; height: var(--logo-h); width: var(--logo-h); padding: 0; display: grid; place-items: center; border-radius: 8px; background: var(--card); }
@@ -296,19 +303,20 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
     </form>
   </dialog>
 
-  <!-- ===================== SEND ===================== -->
-  <main id="view-send" class="view">
-    <section class="card open-here">
+  <!-- Shown when the logo is pressed; works on any device with a camera -->
+    <section id="open-here" class="card open-here" hidden>
       <div class="open-here-qr">
         <svg id="app-qr" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" width="200" height="200" role="img" aria-label="QR code that opens https://joranlager.github.io/qrxfer/" shape-rendering="crispEdges"><rect width="37" height="37" fill="#fff"/><path fill="#000" d="M4 4h7v1h-7zM13 4h1v1h-1zM15 4h4v1h-4zM20 4h4v1h-4zM26 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM13 5h1v1h-1zM16 5h4v1h-4zM21 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM14 6h1v1h-1zM17 6h1v1h-1zM19 6h1v1h-1zM21 6h2v1h-2zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h3v1h-3zM32 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM14 7h1v1h-1zM17 7h2v1h-2zM22 7h3v1h-3zM26 7h1v1h-1zM28 7h3v1h-3zM32 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM14 8h1v1h-1zM16 8h4v1h-4zM26 8h1v1h-1zM28 8h3v1h-3zM32 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM12 9h2v1h-2zM17 9h3v1h-3zM22 9h2v1h-2zM26 9h1v1h-1zM32 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h7v1h-7zM13 11h1v1h-1zM15 11h2v1h-2zM18 11h1v1h-1zM20 11h3v1h-3zM4 12h1v1h-1zM7 12h1v1h-1zM9 12h2v1h-2zM12 12h5v1h-5zM23 12h1v1h-1zM25 12h1v1h-1zM27 12h1v1h-1zM6 13h3v1h-3zM11 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM20 13h2v1h-2zM24 13h3v1h-3zM29 13h1v1h-1zM32 13h1v1h-1zM4 14h1v1h-1zM6 14h2v1h-2zM10 14h2v1h-2zM14 14h2v1h-2zM20 14h4v1h-4zM25 14h7v1h-7zM6 15h2v1h-2zM9 15h1v1h-1zM11 15h4v1h-4zM18 15h3v1h-3zM25 15h2v1h-2zM30 15h2v1h-2zM4 16h7v1h-7zM14 16h3v1h-3zM20 16h3v1h-3zM24 16h3v1h-3zM29 16h1v1h-1zM31 16h2v1h-2zM4 17h1v1h-1zM6 17h3v1h-3zM12 17h3v1h-3zM16 17h1v1h-1zM23 17h3v1h-3zM4 18h1v1h-1zM8 18h3v1h-3zM12 18h2v1h-2zM15 18h1v1h-1zM20 18h1v1h-1zM25 18h1v1h-1zM27 18h1v1h-1zM29 18h4v1h-4zM5 19h1v1h-1zM11 19h2v1h-2zM15 19h4v1h-4zM20 19h2v1h-2zM24 19h2v1h-2zM27 19h1v1h-1zM29 19h1v1h-1zM31 19h1v1h-1zM4 20h1v1h-1zM9 20h3v1h-3zM17 20h2v1h-2zM21 20h1v1h-1zM24 20h2v1h-2zM27 20h1v1h-1zM31 20h1v1h-1zM5 21h1v1h-1zM7 21h1v1h-1zM9 21h1v1h-1zM14 21h2v1h-2zM20 21h2v1h-2zM24 21h4v1h-4zM29 21h1v1h-1zM32 21h1v1h-1zM4 22h1v1h-1zM6 22h1v1h-1zM10 22h1v1h-1zM14 22h4v1h-4zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM26 22h2v1h-2zM31 22h2v1h-2zM7 23h1v1h-1zM9 23h1v1h-1zM11 23h1v1h-1zM14 23h2v1h-2zM17 23h1v1h-1zM19 23h5v1h-5zM26 23h1v1h-1zM28 23h1v1h-1zM31 23h2v1h-2zM4 24h1v1h-1zM6 24h2v1h-2zM10 24h1v1h-1zM12 24h1v1h-1zM14 24h3v1h-3zM18 24h2v1h-2zM24 24h5v1h-5zM30 24h1v1h-1zM12 25h3v1h-3zM17 25h1v1h-1zM20 25h1v1h-1zM24 25h1v1h-1zM28 25h1v1h-1zM30 25h3v1h-3zM4 26h7v1h-7zM13 26h1v1h-1zM17 26h2v1h-2zM21 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h1v1h-1zM31 26h1v1h-1zM4 27h1v1h-1zM10 27h1v1h-1zM12 27h2v1h-2zM15 27h3v1h-3zM22 27h1v1h-1zM24 27h1v1h-1zM28 27h4v1h-4zM4 28h1v1h-1zM6 28h3v1h-3zM10 28h1v1h-1zM13 28h2v1h-2zM18 28h1v1h-1zM21 28h2v1h-2zM24 28h5v1h-5zM31 28h2v1h-2zM4 29h1v1h-1zM6 29h3v1h-3zM10 29h1v1h-1zM12 29h1v1h-1zM14 29h1v1h-1zM18 29h1v1h-1zM23 29h1v1h-1zM26 29h6v1h-6zM4 30h1v1h-1zM6 30h3v1h-3zM10 30h1v1h-1zM16 30h3v1h-3zM23 30h1v1h-1zM28 30h3v1h-3zM32 30h1v1h-1zM4 31h1v1h-1zM10 31h1v1h-1zM13 31h1v1h-1zM15 31h1v1h-1zM17 31h3v1h-3zM21 31h4v1h-4zM27 31h2v1h-2zM31 31h1v1h-1zM4 32h7v1h-7zM12 32h1v1h-1zM17 32h1v1h-1zM20 32h2v1h-2zM24 32h3v1h-3zM29 32h1v1h-1zM31 32h1v1h-1z"/></svg>
       </div>
       <div class="open-here-text">
-        <h2>Open on another phone</h2>
-        <p class="muted">Scan the QR code with your phone's camera to open the app.</p>
+        <h2>Open on another device</h2>
+        <p class="muted">Scan the QR code with a camera to open the app.</p>
       </div>
     </section>
 
-    <section class="card">
+  <!-- ===================== SEND ===================== -->
+  <main id="view-send" class="view">
+    <section class="card file-card">
       <label class="file-pick">
         <input type="file" id="file">
         <span id="file-label">Choose a file, or drop one here</span>
@@ -319,8 +327,7 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
       </div>
     </section>
 
-    <section class="card">
-      <p id="estimate" class="muted"></p>
+    <section class="card start-card">
       <button id="btn-start" class="primary" disabled>Start sending</button>
     </section>
 
@@ -2985,7 +2992,8 @@ logo.addEventListener('click', () => {
   const now = Date.now();
   logoTaps = logoTaps.filter((t) => now - t < 2000);
   logoTaps.push(now);
-  if (logoTaps.length < 4) return;
+  if (logoTaps.length < 4) { $('open-here').hidden = !$('open-here').hidden; return; }
+  $('open-here').hidden = true;
   logoTaps = [];
   const splash = document.createElement('div');
   splash.id = 'splash';
@@ -2999,6 +3007,12 @@ logo.addEventListener('click', () => {
   document.body.append(splash);
   setTimeout(() => location.reload(), 900);
 });
+
+// Tapping anywhere else, or pressing Escape, closes the "open on another device" popover.
+document.addEventListener('click', (e) => {
+  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) $('open-here').hidden = true;
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('open-here').hidden = true; });
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
@@ -3123,7 +3137,6 @@ async function prepare() {
   const token = ++prepareToken;
   $('btn-start').disabled = true;
   if (!sourceFile) return;
-  $('estimate').textContent = 'Preparing file …';
   let asImage = isImageFile(sourceFile);
   showImageOptions(asImage);
   const format = opt.format.value;
@@ -3174,18 +3187,9 @@ async function prepare() {
   updateEstimate();
 }
 
+// Enables Start once a payload is ready.
 function updateEstimate() {
-  if (!payloadBytes) return;
-  const chunk = Math.max(50, +opt.chunk.value || 380);
-  const per = Math.max(1, +opt.perPacket.value || 10);
-  const interval = Math.max(30, +opt.interval.value || 300);
-  const metaLen = new TextEncoder().encode(JSON.stringify({ name: payloadName, type: payloadType, size: payloadBytes.length, crc: 4294967295 })).length;
-  const K = Math.ceil((2 + metaLen + payloadBytes.length) / chunk);
-  const t = (share) => fmtTime((K / share / per) * (interval / 1000));
-  $('estimate').textContent =
-    `${K} data codes first, then parity codes only (${per} per packet, ${fmtBytes(Math.round((per * chunk) / (interval / 1000)))}/s). ` +
-    `Data codes take ${t(1)}. The receiver is done after about ${t(1)} if it reads everything, ${t(0.8)} with 20 % loss, ${t(0.5)} with 50 % loss.`;
-  $('btn-start').disabled = false;
+  if (payloadBytes) $('btn-start').disabled = false;
 }
 
 // ---------------------------------------------------------------- player

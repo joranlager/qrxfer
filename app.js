@@ -39,7 +39,8 @@ logo.addEventListener('click', () => {
   const now = Date.now();
   logoTaps = logoTaps.filter((t) => now - t < 2000);
   logoTaps.push(now);
-  if (logoTaps.length < 4) return;
+  if (logoTaps.length < 4) { $('open-here').hidden = !$('open-here').hidden; return; }
+  $('open-here').hidden = true;
   logoTaps = [];
   const splash = document.createElement('div');
   splash.id = 'splash';
@@ -53,6 +54,12 @@ logo.addEventListener('click', () => {
   document.body.append(splash);
   setTimeout(() => location.reload(), 900);
 });
+
+// Tapping anywhere else, or pressing Escape, closes the "open on another device" popover.
+document.addEventListener('click', (e) => {
+  if (!$('open-here').hidden && !e.target.closest('#open-here, .logo')) $('open-here').hidden = true;
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('open-here').hidden = true; });
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
@@ -177,7 +184,6 @@ async function prepare() {
   const token = ++prepareToken;
   $('btn-start').disabled = true;
   if (!sourceFile) return;
-  $('estimate').textContent = 'Preparing file …';
   let asImage = isImageFile(sourceFile);
   showImageOptions(asImage);
   const format = opt.format.value;
@@ -228,18 +234,9 @@ async function prepare() {
   updateEstimate();
 }
 
+// Enables Start once a payload is ready.
 function updateEstimate() {
-  if (!payloadBytes) return;
-  const chunk = Math.max(50, +opt.chunk.value || 380);
-  const per = Math.max(1, +opt.perPacket.value || 10);
-  const interval = Math.max(30, +opt.interval.value || 300);
-  const metaLen = new TextEncoder().encode(JSON.stringify({ name: payloadName, type: payloadType, size: payloadBytes.length, crc: 4294967295 })).length;
-  const K = Math.ceil((2 + metaLen + payloadBytes.length) / chunk);
-  const t = (share) => fmtTime((K / share / per) * (interval / 1000));
-  $('estimate').textContent =
-    `${K} data codes first, then parity codes only (${per} per packet, ${fmtBytes(Math.round((per * chunk) / (interval / 1000)))}/s). ` +
-    `Data codes take ${t(1)}. The receiver is done after about ${t(1)} if it reads everything, ${t(0.8)} with 20 % loss, ${t(0.5)} with 50 % loss.`;
-  $('btn-start').disabled = false;
+  if (payloadBytes) $('btn-start').disabled = false;
 }
 
 // ---------------------------------------------------------------- player
