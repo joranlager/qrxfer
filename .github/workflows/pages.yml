@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # main plus the feature/fix branch being worked on: the public page always
+    # shows the most recently pushed of these branches.
+    branches: [main, 'feature/**', 'fix/**']
   workflow_dispatch:
 
 permissions:
