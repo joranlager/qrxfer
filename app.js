@@ -38,8 +38,8 @@ const startSplash = $('splash');
 const splashTemplate = startSplash.cloneNode(true);
 setTimeout(() => {
   startSplash.classList.add('hide');
-  setTimeout(() => startSplash.remove(), 400);
-}, 1800);
+  setTimeout(() => startSplash.remove(), 300);
+}, 1200);
 
 // ---------------------------------------------------------------- logo: "open on another device"
 const logo = document.querySelector('.logo');
