@@ -168,6 +168,14 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .dlg-head h2 { margin: 0; }
 #settings h3 { font-size: 14px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Splash shown while the page refreshes (four taps on the logo) */
+.logo { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: var(--bg); animation: splash-in .2s ease-out; }
+#splash img { width: min(60vw, 320px); height: auto; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .3)); animation: splash-pulse 1s ease-in-out infinite; }
+#splash p { margin: 0; font-size: 18px; font-weight: 600; color: var(--muted); }
+@keyframes splash-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-pulse { 50% { transform: scale(1.06); opacity: .85; } }
   </style>
 </head>
 <body>
@@ -271,9 +279,6 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
       <button id="btn-start" class="primary" disabled>Start sending</button>
     </section>
 
-    <section class="card help muted">
-      <p>Open the app on the receiver, choose <b>Receive</b> and point the camera at this screen. After the countdown, all data codes are sent once. When they are done, only parity codes are sent, until you stop. A parity code can replace any lost code (like PAR files), so the receiver never has to wait for one particular code to come around again. Turn the screen brightness up. If the receiver misses codes: increase the time per packet, lower the bytes per QR code, or use fewer QR codes per packet.</p>
-    </section>
   </main>
 
   <!-- Fullscreen player -->
@@ -2923,6 +2928,28 @@ const settingsDlg = $('settings');
 $('btn-settings').onclick = () => settingsDlg.showModal();
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+
+// ---------------------------------------------------------------- refresh: tap the logo four times
+const logo = document.querySelector('.logo');
+let logoTaps = [];
+logo.addEventListener('click', () => {
+  const now = Date.now();
+  logoTaps = logoTaps.filter((t) => now - t < 2000);
+  logoTaps.push(now);
+  if (logoTaps.length < 4) return;
+  logoTaps = [];
+  const splash = document.createElement('div');
+  splash.id = 'splash';
+  splash.setAttribute('role', 'status');
+  const img = document.createElement('img');
+  img.src = logo.src;
+  img.alt = 'QR XFER';
+  const msg = document.createElement('p');
+  msg.textContent = 'Refreshing …';
+  splash.append(img, msg);
+  document.body.append(splash);
+  setTimeout(() => location.reload(), 900);
+});
 
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;

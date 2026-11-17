@@ -28,6 +28,28 @@ $('btn-settings').onclick = () => settingsDlg.showModal();
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
+// ---------------------------------------------------------------- refresh: tap the logo four times
+const logo = document.querySelector('.logo');
+let logoTaps = [];
+logo.addEventListener('click', () => {
+  const now = Date.now();
+  logoTaps = logoTaps.filter((t) => now - t < 2000);
+  logoTaps.push(now);
+  if (logoTaps.length < 4) return;
+  logoTaps = [];
+  const splash = document.createElement('div');
+  splash.id = 'splash';
+  splash.setAttribute('role', 'status');
+  const img = document.createElement('img');
+  img.src = logo.src;
+  img.alt = 'QR XFER';
+  const msg = document.createElement('p');
+  msg.textContent = 'Refreshing …';
+  splash.append(img, msg);
+  document.body.append(splash);
+  setTimeout(() => location.reload(), 900);
+});
+
 // ---------------------------------------------------------------- wake lock
 let wakeLock = null;
 async function keepAwake(on) {
