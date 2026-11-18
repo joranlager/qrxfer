@@ -1,6 +1,6 @@
 import qrcode from './vendor/qrcode.mjs';
 import {
-  buildStreamBytes, Encoder, Decoder, parseSymbol, bytesToBinaryString,
+  buildStreamBytes, Encoder, Decoder, parseSymbol, bytesToBinaryString, OVERHEAD,
 } from './protocol.js';
 
 const $ = (id) => document.getElementById(id);
@@ -125,18 +125,43 @@ const opt = {
   countdown: $('opt-countdown'),
 };
 
+// ---- Limits for the transmission settings
+// Bytes per code: a QR code (version 40, byte mode) holds 2953 / 2331 / 1663 bytes at error correction L / M / Q.
+// Each code also carries OVERHEAD bytes of header and checksum, so that is taken off the top.
+const QR_CAPACITY = { L: 2953, M: 2331, Q: 1663 };
+const maxChunk = (e) => (QR_CAPACITY[e] || QR_CAPACITY.L) - OVERHEAD;
+const LIMITS = {
+  perPacket: { min: 1, def: 12 },
+  chunk: { min: 1, max: () => maxChunk(opt.ecc.value), def: 400 },
+  interval: { min: 30, def: 50 },
+  countdown: { min: 3, def: 5 },
+};
+// A whole number inside the allowed range; an empty or invalid entry falls back to the default.
+function limited(k, v) {
+  const r = LIMITS[k];
+  let n = Math.round(+v);
+  if (!Number.isFinite(n) || v === '' || v == null) n = r.def;
+  const max = r.max ? r.max() : Infinity;
+  return Math.min(max, Math.max(r.min, n));
+}
+function enforceLimits() {
+  opt.chunk.max = maxChunk(opt.ecc.value);
+  for (const k in LIMITS) opt[k].value = limited(k, opt[k].value);
+}
+
 function loadSettings() {
   try {
-    const s = JSON.parse(localStorage.getItem('qrsend6-opts') || '{}');
+    const s = JSON.parse(localStorage.getItem('qrsend7-opts') || '{}');
     for (const k in opt) if (s[k] != null) opt[k].value = s[k];
   } catch {}
+  enforceLimits();
   $('out-quality').textContent = opt.quality.value;
 }
 function saveSettings() {
   try {
     const s = {};
     for (const k in opt) s[k] = opt[k].value;
-    localStorage.setItem('qrsend6-opts', JSON.stringify(s));
+    localStorage.setItem('qrsend7-opts', JSON.stringify(s));
   } catch {}
 }
 
@@ -203,6 +228,8 @@ dropZone.addEventListener('drop', (e) => {
 for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e)) e.preventDefault(); });
 for (const k of ['format', 'maxSide', 'quality']) opt[k].addEventListener('input', () => { saveSettings(); updateCompressOptions(); prepare(); });
 for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('input', () => { saveSettings(); updateEstimate(); });
+// When an entry is finished (or the error correction changes), snap it into its allowed range.
+for (const k of ['perPacket', 'chunk', 'interval', 'ecc', 'countdown']) opt[k].addEventListener('change', () => { enforceLimits(); saveSettings(); updateEstimate(); });
 opt.quality.addEventListener('input', () => ($('out-quality').textContent = opt.quality.value));
 
 async function decodeImage(file) {
@@ -301,7 +328,7 @@ function updateEstimate() {
 // ---------------------------------------------------------------- player
 let playing = false, paused = false;
 let enc = null, current = [], timer = 0;
-let perPacket = 10, interval = 300, ecc = 'M';
+let perPacket = 12, interval = 50, ecc = 'L';
 const pc = $('player-canvas');
 const pctx = pc.getContext('2d', { alpha: false });
 
@@ -390,9 +417,10 @@ function tick() {
 
 function startPlayer() {
   if (!payloadBytes) return;
-  const chunkSize = Math.max(50, +opt.chunk.value || 380);
-  perPacket = Math.max(1, +opt.perPacket.value || 10);
-  interval = Math.max(30, +opt.interval.value || 300);
+  enforceLimits();
+  const chunkSize = limited('chunk', opt.chunk.value);
+  perPacket = limited('perPacket', opt.perPacket.value);
+  interval = limited('interval', opt.interval.value);
   ecc = opt.ecc.value;
   const tid = (crypto.getRandomValues(new Uint32Array(1))[0]) >>> 0;
   enc = new Encoder(buildStreamBytes(payloadBytes, { name: payloadName, type: payloadType }), chunkSize, tid);
@@ -403,7 +431,7 @@ function startPlayer() {
   $('player').hidden = false;
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
-  const secs = Math.max(0, Math.min(120, +opt.countdown.value || 0));
+  const secs = limited('countdown', opt.countdown.value);
   countdownEnd = secs > 0 ? performance.now() + secs * 1000 : 0;
   resizePlayer();
   clearTimeout(timer);
@@ -449,8 +477,8 @@ $('pause-overlay').addEventListener('click', togglePause);
 // Wait between packets: − and + change it in steps of about 25 %, rounded to 10 ms.
 function showInterval() { $('wait-val').textContent = `${interval} ms`; }
 function stepInterval(f) {
-  const next = Math.min(5000, Math.max(30, Math.round((interval * f) / 10) * 10));
-  interval = next !== interval ? next : Math.min(5000, Math.max(30, interval + (f > 1 ? 10 : -10)));
+  const next = Math.max(30, Math.round((interval * f) / 10) * 10);
+  interval = next !== interval ? next : Math.max(30, interval + (f > 1 ? 10 : -10));
   showInterval();
   drawPacket();
 }
