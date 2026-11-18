@@ -32,6 +32,25 @@ $('btn-settings').onclick = () => {
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
+// ---------------------------------------------------------------- theme
+// System follows the device; Light or Dark overrides it. The browser's own colour (address bar) follows too.
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme;
+  const dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute('content', dark ? '#111418' : '#f4f5f7');
+}
+let savedTheme = 'system';
+try { savedTheme = localStorage.getItem('qrxfer-theme') || 'system'; } catch {}
+$('opt-theme').value = savedTheme;
+applyTheme(savedTheme);
+$('opt-theme').addEventListener('change', () => {
+  const t = $('opt-theme').value;
+  try { t === 'system' ? localStorage.removeItem('qrxfer-theme') : localStorage.setItem('qrxfer-theme', t); } catch {}
+  applyTheme(t);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if ($('opt-theme').value === 'system') applyTheme('system'); });
+
 // ---------------------------------------------------------------- splash
 // The splash in the page is shown while the app opens. A copy is kept for the refresh.
 const startSplash = $('splash');

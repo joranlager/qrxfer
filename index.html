@@ -7,7 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#111418">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="data:image/png;base64,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" type="image/png" sizes="32x32">
   <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
@@ -26,16 +27,17 @@
   --parity: #eab308;
   --missing: #e5e7eb;
   color-scheme: light dark;
+  background: var(--bg);
+}
+/* Dark colours: used when the system is dark (unless Light is chosen in Settings), or when Dark is chosen. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="dark"] {
+  --bg: #111418; --card: #1b1f25; --text: #e8eaed; --muted: #9aa3ae; --border: #2c323a; --accent: #3b82f6; --missing: #2c323a;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111418;
-    --card: #1b1f25;
-    --text: #e8eaed;
-    --muted: #9aa3ae;
-    --border: #2c323a;
-    --accent: #3b82f6;
-    --missing: #2c323a;
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --card: #1b1f25; --text: #e8eaed; --muted: #9aa3ae; --border: #2c323a; --accent: #3b82f6; --missing: #2c323a;
   }
 }
 * { box-sizing: border-box; }
@@ -221,8 +223,9 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
 }
+:root[data-theme="dark"] #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
 @media (prefers-color-scheme: dark) {
-  #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
+  :root:not([data-theme="light"]) #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
 }
 #settings::backdrop { background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #settings[open] { display: flex; flex-direction: column; }
@@ -275,6 +278,7 @@ html.no-splash #splash:not(.refreshing) { display: none; }
 <body>
   <!-- A reload (the four-tap refresh or the browser's own) skips the opening splash. Runs before the first paint. -->
   <script>
+    try { var t = localStorage.getItem('qrxfer-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
     try { if (performance.getEntriesByType('navigation')[0].type === 'reload') document.documentElement.classList.add('no-splash'); } catch (e) {}
   </script>
   <!-- Splash shown while the app opens (app.js removes it again) and while refreshing -->
@@ -354,6 +358,17 @@ html.no-splash #splash:not(.refreshing) { display: none; }
               <option value="L">L · More data</option>
               <option value="M" selected>M · Balanced</option>
               <option value="Q">Q · Robust</option>
+            </select>
+          </label>
+        </div>
+
+        <h3>Appearance</h3>
+        <div class="group">
+          <label><span>Theme</span>
+            <select id="opt-theme">
+              <option value="system" selected>System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
             </select>
           </label>
         </div>
@@ -3084,6 +3099,25 @@ $('btn-settings').onclick = () => {
 };
 // Tapping the backdrop closes it
 settingsDlg.addEventListener('click', (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+
+// ---------------------------------------------------------------- theme
+// System follows the device; Light or Dark overrides it. The browser's own colour (address bar) follows too.
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme;
+  const dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute('content', dark ? '#111418' : '#f4f5f7');
+}
+let savedTheme = 'system';
+try { savedTheme = localStorage.getItem('qrxfer-theme') || 'system'; } catch {}
+$('opt-theme').value = savedTheme;
+applyTheme(savedTheme);
+$('opt-theme').addEventListener('change', () => {
+  const t = $('opt-theme').value;
+  try { t === 'system' ? localStorage.removeItem('qrxfer-theme') : localStorage.setItem('qrxfer-theme', t); } catch {}
+  applyTheme(t);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if ($('opt-theme').value === 'system') applyTheme('system'); });
 
 // ---------------------------------------------------------------- splash
 // The splash in the page is shown while the app opens. A copy is kept for the refresh.
