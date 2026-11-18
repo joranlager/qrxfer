@@ -10,16 +10,17 @@
   --parity: #eab308;
   --missing: #e5e7eb;
   color-scheme: light dark;
+  background: var(--bg);
+}
+/* Dark colours: used when the system is dark (unless Light is chosen in Settings), or when Dark is chosen. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="dark"] {
+  --bg: #111418; --card: #1b1f25; --text: #e8eaed; --muted: #9aa3ae; --border: #2c323a; --accent: #3b82f6; --missing: #2c323a;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111418;
-    --card: #1b1f25;
-    --text: #e8eaed;
-    --muted: #9aa3ae;
-    --border: #2c323a;
-    --accent: #3b82f6;
-    --missing: #2c323a;
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --card: #1b1f25; --text: #e8eaed; --muted: #9aa3ae; --border: #2c323a; --accent: #3b82f6; --missing: #2c323a;
   }
 }
 * { box-sizing: border-box; }
@@ -205,8 +206,9 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
 }
+:root[data-theme="dark"] #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
 @media (prefers-color-scheme: dark) {
-  #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
+  :root:not([data-theme="light"]) #settings { --sheet: #000; --group: #1c1c1e; --sep: rgba(84, 84, 88, .6); --label2: rgba(235, 235, 245, .6); --blue: #0a84ff; }
 }
 #settings::backdrop { background: rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 #settings[open] { display: flex; flex-direction: column; }
@@ -231,6 +233,9 @@ h1 small { font-weight: 400; color: var(--muted); font-size: 14px; }
 .group input[type=number]::-webkit-outer-spin-button, .group input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .group select { -webkit-appearance: none; appearance: none; padding-right: 18px; cursor: pointer;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'%3E%3Cpath d='M2 6l3-3 3 3M2 10l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right center / 10px 16px no-repeat; }
+/* The opened list of a select: explicit colours, so it is never white on white in dark mode. */
+select { color-scheme: inherit; }
+select option, select optgroup { background-color: var(--group, var(--card)); color: var(--text); }
 .dlg-foot { padding-top: 16px; }
 .dlg-foot button { width: 100%; padding: 14px; font-size: 17px; font-weight: 600; border: 0; border-radius: 14px; background: var(--blue); color: #fff; }
 .dlg-foot button:active { opacity: .8; }
