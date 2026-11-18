@@ -121,6 +121,9 @@ button:disabled { opacity: .5; cursor: default; }
 /* Player */
 /* The player fills the screen below the top band, so no QR code is ever drawn under the band. */
 #player { position: fixed; top: var(--band-h, 72px); right: 0; bottom: 0; left: 0; background: #fff; z-index: 10; }
+/* Follows the dynamic viewport (the browser's toolbars sliding in and out), so no strip is left at the bottom. */
+@supports (height: 100dvh) { #player { bottom: auto; height: calc(100dvh - var(--band-h, 72px)); } }
+html.playing, html.playing body { overflow: hidden; overscroll-behavior: none; }
 #player-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* Paused: the countdown is blurred and a simple pause symbol sits in the centre. */
 #pause-overlay { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; background: rgba(255, 255, 255, .2);
@@ -3472,6 +3475,7 @@ function startPlayer() {
   $('pause-overlay').hidden = true;
   showInterval();
   $('player').hidden = false;
+  document.documentElement.classList.add('playing');
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
   const secs = Math.max(0, Math.min(120, +opt.countdown.value || 0));
@@ -3486,6 +3490,7 @@ function stopPlayer() {
   $('pause-overlay').hidden = true;
   clearTimeout(timer);
   $('player').hidden = true;
+  document.documentElement.classList.remove('playing');
   keepAwake(false);
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
 }
@@ -3539,6 +3544,9 @@ new ResizeObserver(syncBand).observe(band);
 window.addEventListener('resize', syncBand);
 window.addEventListener('orientationchange', () => setTimeout(syncBand, 150));
 window.visualViewport?.addEventListener('resize', syncBand);
+// Whatever makes the player change size (toolbars, fullscreen, rotation), the canvas follows it.
+new ResizeObserver(() => { if (playing) resizePlayer(); }).observe($('player-canvas'));
+document.addEventListener('fullscreenchange', () => { if (playing) { requestAnimationFrame(resizePlayer); setTimeout(resizePlayer, 300); } });
 syncBand();
 document.addEventListener('keydown', (e) => { if (playing && e.key === 'Escape') stopPlayer(); });
 

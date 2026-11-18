@@ -401,6 +401,7 @@ function startPlayer() {
   $('pause-overlay').hidden = true;
   showInterval();
   $('player').hidden = false;
+  document.documentElement.classList.add('playing');
   document.documentElement.requestFullscreen?.().catch(() => {});
   keepAwake(true);
   const secs = Math.max(0, Math.min(120, +opt.countdown.value || 0));
@@ -415,6 +416,7 @@ function stopPlayer() {
   $('pause-overlay').hidden = true;
   clearTimeout(timer);
   $('player').hidden = true;
+  document.documentElement.classList.remove('playing');
   keepAwake(false);
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
 }
@@ -468,6 +470,9 @@ new ResizeObserver(syncBand).observe(band);
 window.addEventListener('resize', syncBand);
 window.addEventListener('orientationchange', () => setTimeout(syncBand, 150));
 window.visualViewport?.addEventListener('resize', syncBand);
+// Whatever makes the player change size (toolbars, fullscreen, rotation), the canvas follows it.
+new ResizeObserver(() => { if (playing) resizePlayer(); }).observe($('player-canvas'));
+document.addEventListener('fullscreenchange', () => { if (playing) { requestAnimationFrame(resizePlayer); setTimeout(resizePlayer, 300); } });
 syncBand();
 document.addEventListener('keydown', (e) => { if (playing && e.key === 'Escape') stopPlayer(); });
 
